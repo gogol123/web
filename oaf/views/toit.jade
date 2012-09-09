@@ -1,0 +1,86 @@
+extends layout
+block script
+  script(src='https://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.js')
+  link(rel='stylesheet', href='https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/themes/redmond/jquery-ui.css')
+  style(type='text/css')
+    #schema {width:350px;height:200px;background-color:#BDBDBD; }
+    #moteur {width:350px;height:50px;background-color:#BDBDBD; }
+    .capteur, .etatMoteur { width:30px;height:30px;opacity:0.6;background-color:#6E6E6E; }
+    .textClass { width:60px;height:30px;font-size:150%; }
+    #statusLabel { width:160px; font-weight:bold}
+  script
+    var statusTable = ['Toit ferme ','Tympan Ouverture intermedaire','Tympan ouverture totale','',
+                       'Tympan fermeture','Toit fermeture','Toit ouverture','Toit ouvert','Arret Urgence',
+                       'Tympan fermeture','Park Téléscope'];
+    $(document).ready(function() {
+      $('button').button();
+      $('#ToitFerme').position({my:'left top',at:'left top',of:'#schema'});
+      $('#ToitOuvert').position({my:'right top',at:'right top',of:'#schema'});
+      $('#TympanOuvert').position({my:'left bottom',at:'left bottom',of:'#schema'});
+      $('#TympanIntermediaire').position({my:'left top',at:'left top',offset: '0 70',of:'#schema'});
+      $('#TympanFerme').position({my:'left top',at:'left top',offset: '0 35',of:'#schema'});
+      $('#Telescope').position({of:'#schema'});	
+      $('#ToitLabel').position({my:'center top',at:'center top',of:'#schema'});
+      $('#TympanLabel').position({my:'left top',at:'left center',offset :'0 20',of:'#schema'});
+      $('#TelescopeLabel').position({offset:'0 35',of:'#schema'});
+      $('#statusLabel').position({my:'left bottom',at:'left bottom',offset:'150 -20',of:'#schema'});
+      $('#OuvertureTympan').position({my:'left',at :'left ',of :'#moteur'});
+      $('#FermetureTympan').position({my:'left',at :'left ',offset:'60 0',of :'#moteur'});
+      $('#OuvertureToit').position({my:'right',at :'right ',offset:'-60 0',of :'#moteur'});
+      $('#FermetureToit').position({my:'right',at :'right ',of :'#moteur'});
+      $('button' ).click(function() {	
+         var id = $(this).attr('id'); 
+         $.post('/action/roof', { action: id } );
+         });
+      });
+    function updateSchema(){
+    $.getJSON('/json/roof',function(data){
+      $('#Telescope').css('background-color',((data.Telescope==0)?'red':'green'));
+      $('#ToitFerme').css('background-color',((data.ToitFerme==1)?'green':'#6E6E6E'));
+      $('#ToitOuvert').css('background-color',((data.ToitOuvert==1)?'green':'#6E6E6E'));
+      $('#TympanOuvert').css('background-color',((data.TympanOuvert==1)?'green':'#6E6E6E'));
+      $('#TympanFerme').css('background-color',((data.TympanFerme==1)?'green':'#6E6E6E'));
+      $('#TympanInter').css('background-color',((data.TympanIntermediaire==1)?'green':'#6E6E6E'));
+      $('#OuvertureTympan').css('background-color',((data.OuvertureTympan==1)?'red':'#6E6E6E'));
+      $('#FermetureTympan').css('background-color',((data.FermetureTympan==1)?'red':'#6E6E6E'));
+      $('#OuvertureToit').css('background-color',((data.OuvertureToit==1)?'red':'#6E6E6E'));
+      $('#FermetureToit').css('background-color',((data.FermetureToit==1)?'red':'#6E6E6E'));
+      $('#statusLabel').text(statusTable[data.CurrentState]);
+      if (data.CurrentState==8) 
+         $('#statusLabel').css('color','red');
+      else
+        $('#statusLabel').css('color','black');
+      });
+    };
+    setInterval('updateSchema();',1000); 
+
+
+block content
+  legend Toit status
+  #Toit.container(style='font-size:62.5%')
+    #schema
+      #ToitFerme.capteur
+      #ToitOuvert.capteur
+      #TympanOuvert.capteur
+      #TympanInter.capteur
+      #TympanFerme.capteur
+      #Telescope.capteur
+      #ToitLabel.textClass Toit
+      #TympanLabel.textClass Tympan
+      #TelescopeLabel.textClass Teléscope
+      #statusLabel.textClass status
+    b Etat Moteurs
+    #moteur
+      #OuvertureTympan.etatMoteur O
+      #FermetureTympan.etatMoteur F
+      #OuvertureToit.etatMoteur O
+      #FermetureToit.etatMoteur F
+    br
+    .row
+      label.span2 Ouverture:
+      button#ouvertureP.btn.btn-small.span2  Partielle
+      button#ouvertureT.btn.btn-small.span2  Total
+    .row
+       button#fermeture.btn.btn-small.span2 Fermeture
+    .row
+       button#stop.btn.btn-small.btn-danger.span2 Stop!

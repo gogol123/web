@@ -1,0 +1,82 @@
+extends layout
+block script
+  script  
+   $(document).ready(function() {
+      updateSchema();
+    });
+    function updateSchema() {
+      $.getJSON('/json/meteo',function(data){
+         $('#TempSkyVal').text(data.SkyTemp);
+         $('#TempSky').val(data.seuil.SkyTemp);
+         $('#TempVal').text(data.DHTTemp);
+         $('#Temp').val(data.seuil.Temp);
+         $('#DeltaVal').text((data.MLXAmb-data.SkyTemp).toFixed(2));
+         $('#Delta').val(data.seuil.Clarity);
+         $('#HumVal').text(data.DHTHum);
+         $('#Hum').val(data.seuil.DHTHum);
+         $('#ObscVal').text(data.Darkness);
+         $('#Obsc').val(data.seuil.Darkness);
+         $('#RainVal').text(data.Rain);
+         $('#Rain').val(data.seuil.Rain);
+      });
+    }
+    setInterval('updateSchema();',10000); 
+ 
+
+block content
+ .row 
+  .span8.offset1
+   legend Meteo
+   form(method="post", action="/action/meteo")
+       table.table-condensed.table-hover
+         thead
+          tr
+            th Capteur
+            th Valeur
+            th Check
+            th Seuil
+         tboby
+          tr
+            th Temperature du ciel 
+            th#TempSkyVal -22
+            th 
+                   input#TempSkyCheck(type='checkbox',name = 'TempSkyCheck')
+            th
+              input#TempSky(type='text',name = 'TempSky').span1
+          tr
+            th Temperature ambiente 
+            th#TempVal 20
+            th 
+              input#TempCheck(type='checkbox',name = 'TempCheck')
+            th 
+              input#Temp(type='text',name='Temp').span1
+          tr
+            th Delta temperature 
+            th#DeltaVal 44
+            th
+              input#DeltaCheck(type='checkbox',name='DeltaCheck')
+             th 
+              input#Delta(type='text',name = 'Delta').span1
+         tr
+            th Humidite
+            th#HumVal 90
+            th
+              input#HumCheck(type='checkbox',name='HumCheck')
+            th 
+              input#Hum(type='text',name='Hum').span1
+         tr
+            th Obscurite 
+            th#ObscVal 90
+            th 
+              input#ObscCheck(type='checkbox',name='ObscCheck')
+             th 
+              input#Obsc(type='text',name='Obsc').span1
+         tr
+            th Pluie 
+            th#RainVal 90
+            th
+              input#RainChek(type='checkbox',name ='RainChek')
+            th 
+              input#Rain(type='text',name='Rain').span1
+    .row 
+       button#Valider.btn.btn-small.span2   Valider

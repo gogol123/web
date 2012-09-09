@@ -1,0 +1,130 @@
+extends layout
+
+block script
+  script(src='https://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js')
+  //link(rel='stylesheet', href='https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/themes/redmond/jquery-ui.css')
+  style
+     #status { text-align:center; }
+
+  script
+    $(document).ready(function() {
+      $('button').button();
+      $('#ErrorMessage').hide();
+      $('button' ).click(function() {	
+          var id = $(this).attr('id'); 
+          $.post('/action/mount', { action: id } );
+      });
+    });
+    function updateSchema() {
+      $.getJSON('/json/mount',function(data){
+        // gestion status
+        if (data.Power == 0.0) {
+           $('#status').text("off");
+           $('#status').css('background-color','white');
+           $('#status').css('color','black');
+           //$('#target').hide();
+        } 
+        else {
+        $('#target').show();
+        if (data.Power >= 0.0 && data.Power < 1.0 ) {
+           $('#status').text("Operational (Standby)");
+           $('#status').css('background-color','white');
+        } else
+        if (data.Power == 1.0) {
+           if (data.Referenced >= 0.0 && data.Referenced <= 1.0) {
+              $('#status').text("Referencing");
+              $('#status').css('background-color','yellow');
+           }
+           if (data.Referenced  == 1.0) {
+              $('#status').text("Operational");
+              $('#status').css('background-color','green');
+              $('#status').css('color','white');
+           }
+        }
+        }
+        if (data.Globalstatus != 0.0 ) {
+           $('#status').text("Operational (Error)");
+           $('#status').css('background-color','red');
+           $('#status').css('color','white');
+        }
+        if (data.Power == -1.0 ) {
+           $('#status').text("Emergency Off");
+           $('#status').css('background-color','yellow');
+           $('#status').css('color','red');
+        }
+         $('#HA').text(" "+ Math.floor (data.CurrHA/15)+" h "+Math.floor ((data.CurrHA/15-Math.floor (data.CurrHA/15))*60)+" \"");
+         $('#DEC').text(" "+data.CurrDec.toFixed(2)+" d");
+         if (data.Track == 0) {
+            $('#track').text("Not tracking")
+            }
+         else {
+            $('#StartTrack').text("Stop track");
+            if (data.Track == 3)
+               $('#track').text("Tracking West of the pillar")
+            else if (data.Track == 1)
+               $('#track').text("Tracking East of the pillar")
+         }
+         $('#PointingRA').text(" "+data.targetRA);
+         $('#PointingDec').text(" "+data.targetDec);
+         if (data.Track == 3) {
+           var tr = new Date (data.transitTime);
+           $('#transitTime').text(" "+tr.getHours()+"h"+tr.getMinutes()+" in "+data.timeRemaining);
+         }
+         else
+           $('#transitTime').text("N/A");
+
+         if ((data.HAMotionstate  & 8 ) && (data.DecMotionstate  & 8 ) ) {
+              $('#slewing').text("Tracking");
+              $('#slewing').css('color','black');
+         }
+         else {
+              $('#slewing').text("slewing");
+              $('#slewing').css('color','red');
+         }
+         if (data.HAMotionstate == 0 && data.DecMotionstate == 0)  {
+           $('#slewing').text("Stopped");
+           $('#slewing').css('color','red');
+         }
+      });
+    }
+    setInterval('updateSchema();',1000); 
+block content
+
+   .alert#ErrorMessage 
+        p= message
+   .row
+    .span8.offset1
+     legend Telescope status
+     span#status.span4.uneditable-input
+     .row
+          label.span2 HA:
+          label#HA.span2  0.0
+     .row
+          label.span2 DEC :
+          label#DEC.span2 0.0
+     .row
+          button#On.btn.btn-small.span2   On
+          button#Off.btn.btn-small.span2 Off
+     .row
+          button#Clear.btn.btn-small.span2 Clear 
+          button#Home.btn.btn-small.span2   Home
+     br 
+     br
+     legend#target Target
+     .row
+       label.span2 Axis:
+       label#slewing.span2
+     .row
+       label.span2 Tracking:
+       label#track.span3 
+     .row
+       label.span2 RA(J2000):
+       label#PointingRA.span2 0.0
+     .row
+       label.span2 DEC(J2000):
+       label#PointingDec.span2 0.0
+     .row
+       label.span2 Transit:
+       label#transitTime.span2 0.0
+     .row
+        button#StartTrack.btn.btn-small.span2   Track

@@ -1,0 +1,111 @@
+extends layout
+
+block script
+  script(src='/javascripts/jquery.tablednd.0.7.min.js')
+
+  script
+    var currentRow ; 
+    $(document).ready(function() {
+      $.getJSON('/json/actionlist',function(data){
+        $.each(data, function(key, val) {
+          $('<tr>').attr('id',val.TaskName)
+                 .append($('<td>').html(val.id))		
+                 .append($('<td>').html(val.TaskName))	
+                 .append($('<td>').html(val.Action))
+                 .append($('<button>').html('option').addClass('btn').addClass('btn-small'))
+                 .bind('click', function(event) {
+                    if (currentRow)
+                      currentRow.removeClass('info');
+                    currentRow = $(this).closest('tr');
+                    $(this).closest('tr').addClass('info');
+                 })
+                 .appendTo('#example');
+        });
+      $('#example').tableDnD();
+      });
+      $('#Add' ).click(function() {	
+        $('#modal-add').modal({show:true});
+      })
+       $('#Delete' ).click(function() {	
+        confirm('Delete item :'+currentRow.attr('id'));
+      })
+      $('#modal-save').click(function(){
+       $('#formAdd').submit();
+      });
+      $('#search').click(function(){
+          var val = $('#objectName').val().toUpperCase();
+          $.post('/action/searchObject', { object: val }, function (data){
+             var obj = JSON.parse(data);
+             $('#rainput').val(obj[0].RA);
+             $('#Dec').val(obj[0].DEC);
+             $('#ln').attr('href','http://simbad.u-strasbg.fr/simbad/sim-id?Ident='+obj[0].OBJECT);
+             $('#ln').text(obj[0].OBJECT);
+          });
+       });
+     });
+ 
+
+
+block content
+
+   .alert#ErrorMessage 
+        p= message
+    .row
+      .span6.offset1
+        legend  Task list
+        .btn-group
+           button#Add.btn.btn-small.span1   Add
+           button#Edit.btn.btn-small.span1   Edit
+           button#Delete.btn.btn-small.span1   Delete
+        table#example.table.table-striped.table-bordered
+          thead
+           tr
+             th id
+             th Name
+             th Action
+             th Option
+   .modal#modal-add.hide.fade
+     .modal-header
+         button.close(data-dismiss="modal",aria-hidden="true")&times;
+         .h2 Add Task
+     .modal-body
+      form#formAdd.form-horizontal(method="post", action="/action/addtask")
+       .control-group
+         label.control-label Task Name 
+         .controls
+              input(type="text",placeholder="Task name",name='TaskName')
+       .control-group
+         label.control-label Action 
+         .controls
+           select(name = 'action')
+             option(value='Ouverture Toit') Ouverture Toit
+             option(value='Fermeture Toit') Fermeture Toit
+             option(value='Power on monture') Power on monture
+             option(value='Power off monture') Power off monture
+             option(value='Slew') Slew
+             option(value='Slew and Expose') Slew and Expose
+       .control-group
+         label.control-label Object Name 
+         .controls
+           .form-search
+              input#objectName(type="text",placeholder="Object name",name='name')
+              a.btn#search Search 
+       .control-group
+         label.control-label Link 
+         .controls
+           a#ln(target="_blank")
+       .control-group
+         label.control-label RA 
+         .controls
+           input#rainput(type="text",placeholder="RA",name='RA')  
+       .control-group
+         label.control-label DEC 
+         .controls
+           input#Dec(type="text",placeholder="DEC",name='DEC')     
+       .control-group
+         label.control-label Option 
+         .controls
+           button.btn Option     
+     .modal-footer
+       button.btn(data-dismiss="modal",aria-hidden="true") Close
+       a#modal-save.btn.btn-primary  Save
