@@ -37,6 +37,7 @@ app.configure(function(){
   app.use(express.bodyParser());
   app.use(express.methodOverride());
   app.use(express.cookieParser('your secret here'));
+  app.use(express.favicon(__dirname + '/public/images/favicon.png'));
   app.use(express.session());
   app.use(flash());
   app.use(passport.initialize());

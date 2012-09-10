@@ -42,6 +42,11 @@ block script
              $('#ln').text(obj[0].OBJECT);
           });
        });
+      $('#ImageOption' ).click(function() { 
+        $('#modal-add').modal({show:false});
+        $('#modal-imageOption').modal({show:true});
+      })
+
      });
  
 
@@ -103,9 +108,75 @@ block content
          .controls
            input#Dec(type="text",placeholder="DEC",name='DEC')     
        .control-group
-         label.control-label Option 
+         label.control-label Expose Option 
          .controls
-           button.btn Option     
+           a#ImageOption.btn Option     
      .modal-footer
+       button.btn(data-dismiss="modal",aria-hidden="true") Close
+       a#modal-save.btn.btn-primary  Save
+
+   .modal#modal-imageOption.hide.fade
+    .modal-header
+      button.close(data-dismiss="modal",aria-hidden="true")&times;
+      .h2 Image options
+
+    .modal-body
+      .row
+       .span6
+        form.form-inline
+          label.checkbox
+            input(type="checkbox",checked)      1
+          select.span2
+            option  Luminance
+            option  Red
+            option  Green
+            option  Blue
+            option  Ha-Alpha
+          input.input-small.span1(placeholder="Expose")
+          select.span1
+            option bin 1
+            option bin 2
+          input.input-small.span1(placeholder="Repeat")
+        form.form-inline
+          input(type="checkbox") 2
+          select.span2
+            option  Luminance
+            option(selected)  Red
+            option  Green
+            option  Blue
+            option  Ha-Alpha
+          input.input-small.span1(placeholder="Expose")
+          select.span1
+           option  bin 1
+            option bin 2
+          input.input-small.span1(placeholder="Repeat")       
+         form.form-inline
+          input(type="checkbox") 3
+          select.span2
+            option  Luminance
+            option  Red
+            option(selected)  Green
+            option  Blue
+            option  Ha-Alpha
+          input.input-small.span1(placeholder="Expose")
+          select.span1
+           option  bin 1
+            option bin 2
+          input.input-small.span1(placeholder="Repeat")
+         form.form-inline
+          input(type="checkbox") 1
+          select.span2
+            option  Luminance
+            option  Red
+            option  Green
+            option(selected)  Blue
+            option  Ha-Alpha
+          input.input-small.span1(placeholder="Expose")
+          select.span1
+           option  bin 1
+            option bin 2
+          input.input-small.span1(placeholder="Repeat")
+
+    .modal-footer
        button.btn(data-dismiss="modal",aria-hidden="true") Close
        a#modal-save.btn.btn-primary  Save

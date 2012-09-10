@@ -6,7 +6,7 @@ var querystring = require('querystring');
 //Etat Toit 
 
 var statusTable = [
-	'Toit fermé',
+	'Toit ferm&eacute;',
 	'Tympan Ouverture intermedaire',
 	'Tympan ouverture totale',
 	'Tympan fermeture1',
@@ -18,7 +18,7 @@ var statusTable = [
     'Tympan fermeture',
 	'Park Telescope',
 	'Toit ouverture',
-	'Toit aération',
+	'Toit a&eacute;ration',
 	'Tympan Ouverture intermedaire'
 	];
 	exports.getJson = function (callback) {
