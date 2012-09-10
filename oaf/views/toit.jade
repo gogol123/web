@@ -8,10 +8,13 @@ block script
     .capteur, .etatMoteur { width:30px;height:30px;opacity:0.6;background-color:#6E6E6E; }
     .textClass { width:60px;height:30px;font-size:150%; }
     #statusLabel { width:160px; font-weight:bold}
+  'Toit ouverture',
+  'Toit a&eacute;ration',
+  'Tympan Ouverture intermedaire'
   script
-    var statusTable = ['Toit ferme ','Tympan Ouverture intermedaire','Tympan ouverture totale','',
+    var statusTable = ['Toit ferm&eacute;','Tympan Ouverture intermedaire','Tympan ouverture totale','Tympan fermeture',
                        'Tympan fermeture','Toit fermeture','Toit ouverture','Toit ouvert','Arret Urgence',
-                       'Tympan fermeture','Park Téléscope'];
+                       'Tympan fermeture','Park T&eacute;l&eacute;scope','Toit ouverture','Toit a&eacute;ration',  'Tympan Ouverture intermedaire'];
     $(document).ready(function() {
       $('button').button();
       $('#ToitFerme').position({my:'left top',at:'left top',of:'#schema'});
