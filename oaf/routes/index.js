@@ -1,8 +1,10 @@
 var async = require('async');
+var sio = require('socket.io');
+
 
 var roof = require('../utils/roof.js');
 var telescope = require('../utils/tpl2.js');
-var Location = require("../utils/maximjs").Location;
+//var Location = require("../utils/maximjs").Location;
 var task = require ('../task.js');
 
 var ToitStatus;
@@ -18,7 +20,8 @@ var MeteoSeuil = {
 	RainCheck:'on',
 	};
 
-var Osenbach = new Location(47.9926716666666735,7.2065583333333336);
+
+//var Osenbach = new Location(47.9926716666666735,7.2065583333333336);
 
 var CounterMeteo=0;
 function WatchMeteo(err,result){
@@ -81,7 +84,11 @@ setInterval(telescope.getNTMStatus,1000,function(err,result){
 
 exports.index = function(req, res){
  if (req.user)
-  res.render('index', { title: 'OAF Web control',user: req.user });
+ 	if (!req.session.CurrentSequenceId)
+  		res.render('index', { seqid:0 ,title: 'OAF Web control',user: req.user });
+  	else
+  		 res.render('index', { seqid:req.session.CurrentSequenceId, title: 'OAF Web control',user: req.user });
+
  else
 	res.redirect('/login');
 };
@@ -111,11 +118,14 @@ exports.meteo = function(req, res){
 };
 
 exports.task = function(req, res){
-  res.render('task', {title: 'OAF Web control',user: req.user, message: req.flash('error')});
-
+	if (!req.session.CurrentSequenceId)
+		 res.render('task', {seqid: 0,title: 'OAF Web control',user: req.user, message: req.flash('error')});
+	else
+  		res.render('task', {seqid:req.session.CurrentSequenceId,title: 'OAF Web control',user: req.user, message: req.flash('error')});
 };
 
 exports.jsonRoof = function(req, res){
+
 	res.writeHead(200, {'content-type': 'text/json' });
 	res.write( ToitSatus);
 	res.end('\n');
@@ -137,11 +147,12 @@ exports.jsonMeteo = function(req, res){
 };
 
 exports.jsonActionList = function(req, res){
-	res.writeHead(200, {'content-type': 'text/json' });
-	task.getTaskListJson(function (err,list){
+	task.getTaskListJson(req.query["id"],function (err,list){
 		if(!err){
+			res.writeHead(200, {'content-type': 'text/json' });
 			res.write( list);
-			res.end('\n');
+			req.session=null;
+			res.end();
 		}
 	});
 };
@@ -154,6 +165,21 @@ exports.jsonSeqList = function(req, res){
 			res.end('\n');
 		}
 	});
+};
+exports.jsonSeq = function(req, res){
+
+	res.writeHead(200, {'content-type': 'text/json' });
+	task.getSeq(req.query["id"],function (err,list){
+		if(!err){
+			res.write( list);
+		}
+	req.session.CurrentSequenceId=req.query["id"];
+	res.end();
+
+
+
+	});
+
 };
 
 
@@ -250,6 +276,7 @@ exports.actionMeteo = function(req, res){
 	MeteoSeuil.RainCheck=req.body.RainChek;
 
 	console.log(MeteoSeuil);
+	req.session = null; 
     res.redirect('/meteo');
 
 };
@@ -262,6 +289,7 @@ exports.actionAddTask = function(req, res){
 	
 	t.Owner= req.user.username;
 	t.Action = req.body.action;
+	t.sequence = req.body.objectId;
 
 	if (req.body.action == 'Slew' || req.body.action == 'Slew and Expose' ){
 		Target.Name = req.body.name;
@@ -305,8 +333,12 @@ exports.actionAddTask = function(req, res){
 	
 	task.save(t)
 
-	console.log(t);
+	console.log('add task');
+	req.session = null; 
     res.redirect('/task');
+    res.end();
+    
+
 
 };
 
@@ -316,7 +348,6 @@ exports.actionsearchObject = function(req, res){
 	task.searchObject(req.body.object,function (err,result) {
 		if (!err) {
 		    var str = JSON.stringify(result);
-			console.log(str);
 			res.write(str);
 			res.end();
 		}
@@ -327,7 +358,7 @@ exports.actiondeleteTask = function(req, res){
 
 	console.log('delete task :'+req.body.id);
 	task.removeTask(req.body.id,function (err,result) {
-
+	req.session = null; 
 	});
 };
 
@@ -340,5 +371,54 @@ exports.actionAddSeq = function(req, res){
 	seq.name = req.body.seqname;
 
 	task.addSeq(seq);
+	req.session = null; 
+	res.redirect('/task');
+
 
 }
+
+var io;
+var socket;
+
+
+
+exports.actionStartSequence = function(req, res){
+	res.redirect('/');
+	req.session=null;
+	res.end();
+    task.getTaskList(req.body.id,function (err,list){
+		if(!err){
+			async.forEachSeries(list,function(item,callback){
+				switch (item.Action) {
+					case  'Ouverture Toit':
+		            case  'Fermeture Toit':
+		            case  'Power on monture':
+		            case  'Power off monture':
+		            case  'Slew' :
+		            case 'Slew and Expose':
+		            default :
+							socket.emit('UpdateSequence',{msg:'tache:'+item.Action});
+							callback(null);
+					}
+
+			},
+			function(err){
+				console.log(err)
+			})
+		}
+	});
+}
+
+
+
+//websocket
+
+exports.setIo = function(i){
+	io = i;
+
+	io.sockets.on('connection', function (sock) {
+		socket=sock;
+  		sock.emit('UpdateSequence', { hello: 'world' });
+  });
+}
+

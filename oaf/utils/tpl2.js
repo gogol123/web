@@ -1,6 +1,6 @@
 var net = require('net');
 var util =require('./util.js');
-var Location = require("./maximjs").Location;
+//var Location = require("./maximjs").Location;
 
 var ntm;
 var ParkPosition ={

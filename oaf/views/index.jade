@@ -1,5 +1,54 @@
 extends layout
 
+block script
+
+  script(src="/socket.io/socket.io.js")
+  script
+
+    var socket = io.connect('https://localhost');
+      socket.on('UpdateSequence', function (data) {
+          text = $('#log').text();
+          if (text)
+            text=text+"\n"+data.msg;
+          else
+            text=data.msg;
+          $('#log').text(text);
+       });
+
+    $(document).ready(function() {
+
+      $('#ErrorMessage').hide();
+      $('#AlertClose').click(function(){
+          $('#ErrorMessage').hide();
+        })
+      $('button' ).click(function() { 
+          var id = $(this).attr('id'); 
+          $.post('/action/mount', { action: id }, function (data) {
+               $('#ErrorText').text(data);
+               $('#ErrorMessage').show();
+            });
+      });
+
+        $('#ExecuteList').empty();
+        $.getJSON('/json/actionlist',{id:'#{seqid}'} ,function(data){
+          $.each(data, function(key, val) {
+             var tr = $('<tr>').attr('id',val._id)
+                   .append($('<td>').append($('<input>').attr('type','checkbox')))
+                   .append($('<td>').html(val.Action));
+                   if (val.Target) 
+                    tr.append($('<td>').html(val.Target.Name));
+                   else 
+                     tr.append($('<td>'));
+                    tr.append($('<td>').append($('<div>').append($('<div>').addClass('bar').attr('style','width:10%'))
+                                        .addClass('progress').addClass('span2')))
+                   .appendTo('#ExecuteList');
+            });
+        });
+        $('#Start').click(function(){
+            $.post('/action/startSequence',{id:'#{seqid}'})
+          })
+    });
+
 block content
   .row
     .span8.offset1
@@ -8,28 +57,29 @@ block content
          h4 Error
          p#ErrorText
      p Welcome  #{user.username}
-     a(href='/toit') Toit
-      br
-     a(href='/mount') Monture
-      br
-     a(href='/meteo') Meteo
-      br
-     a(href='/task') Taches
-      br
-     a(href='/logout') Logout
-       br 
+     //- a(href='/toit') Toit
+     //-  br
+     //- a(href='/mount') Monture
+     //-  br
+     //- a(href='/meteo') Meteo
+     //-  br
+     //- a(href='/task') Taches
+     //-  br
+     //- a(href='/logout') Logout
+     //-   br 
      legend Execute
      .row
-       table#example.table.table-striped.table-bordered
+       table#ExecuteList.table.table-striped.table-bordered
           thead
            tr
              th 
                 input#selectAll(type='checkbox')
-             th Task Name
              th Action
+             th Object 
              th Progress
-       button.btn Start
+          tbody#executebody
+       button.btn.btn-warning#Start Start
      legend Console
      .row
-        textarea(rows=20).span8
+        textarea#log(rows=20).span8
   

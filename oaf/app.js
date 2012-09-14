@@ -3,7 +3,9 @@
  * Module dependencies.
  */
 
-
+process.on('uncaughtException', function(err) {
+  console.log(err);
+});
 
 
 var express = require('express')
@@ -12,10 +14,10 @@ var express = require('express')
   , routes = require('./routes')
   , https = require('https')
   , path = require('path')
-  , fs =   require('fs')
   , sio = require('socket.io')
+  , fs =   require('fs')
   , mongo = require('mongodb')
-  , LocalStrategy = require('passport-local').Strategy;;
+  , LocalStrategy = require('passport-local').Strategy;
 
 var app = express();
 
@@ -38,17 +40,25 @@ app.configure(function(){
   app.use(express.methodOverride());
   app.use(express.cookieParser('your secret here'));
   app.use(express.favicon(__dirname + '/public/images/favicon.png'));
+  app.use(express.static(path.join(__dirname, 'public')));
   app.use(express.session());
   app.use(flash());
   app.use(passport.initialize());
   app.use(passport.session());
   app.use(app.router);
-  app.use(express.static(path.join(__dirname, 'public')));
 });
 
 app.configure('development', function(){
-//  app.use(express.errorHandler());
+ app.use(express.errorHandler());
 });
+
+app.post('/login',
+  passport.authenticate('local', { failureRedirect: '/login', failureFlash: true }),
+  function(req, res) {
+    res.redirect('/');
+
+  });
+
 
 app.get('/', routes.index);
 app.get('/login',routes.login);
@@ -63,26 +73,24 @@ app.get('/json/mount',ensureAuthenticated,routes.jsonMount);
 app.get('/json/meteo',ensureAuthenticated,routes.jsonMeteo);
 app.get('/json/actionlist',ensureAuthenticated,routes.jsonActionList);
 app.get('/json/sequencelist',ensureAuthenticated,routes.jsonSeqList);
+app.get('/json/sequence',ensureAuthenticated,routes.jsonSeq);
 
-app.post('/login',
-  passport.authenticate('local', { failureRedirect: '/login', failureFlash: true }),
-  function(req, res) {
-    res.redirect('/');
-  });
+
   
-  app.post('/action/mount',ensureAuthenticated,routes.actionMount)
-  app.post('/action/roof',ensureAuthenticated,routes.actionRoof)
-  app.post('/action/meteo',ensureAuthenticated,routes.actionMeteo)
-  app.post('/action/addtask',ensureAuthenticated,routes.actionAddTask)
-  app.post('/action/searchObject',ensureAuthenticated,routes.actionsearchObject)
-  app.post('/action/deleteTask',ensureAuthenticated,routes.actiondeleteTask)
-  app.post('/action/addSeq',ensureAuthenticated,routes.actionAddSeq)
+app.post('/action/mount',ensureAuthenticated,routes.actionMount)
+app.post('/action/roof',ensureAuthenticated,routes.actionRoof)
+app.post('/action/meteo',ensureAuthenticated,routes.actionMeteo)
+app.post('/action/addtask',ensureAuthenticated,routes.actionAddTask)
+app.post('/action/searchObject',ensureAuthenticated,routes.actionsearchObject)
+app.post('/action/deleteTask',ensureAuthenticated,routes.actiondeleteTask)
+app.post('/action/addSeq',ensureAuthenticated,routes.actionAddSeq)
+
+app.post('/action/startSequence',ensureAuthenticated,routes.actionStartSequence)
 
 server =https.createServer(options,app).listen(app.get('port'), function(){
   console.log("Express server listening on port " + app.get('port'));
 });
 
-var io = sio.listen(server,options);
 
 
 function ensureAuthenticated(req, res, next) {
@@ -155,14 +163,7 @@ passport.use(new LocalStrategy(
   }
 ));
 
-//websocket
 
-
-io.sockets.on('connection', function (socket) {
-  socket.emit('news', { hello: 'world' });
-  socket.on('my other event', function (data) {
-    console.log(data);
-  });
-});
-
+var io = sio.listen(server,options);
+routes.setIo(io);
 

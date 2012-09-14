@@ -1,14 +1,5 @@
 
 var mongo = require('mongodb');
-
-
-	
-var SlewAndExposeOption = {
-	ObjectName : 'M27',
-	RA		    : 0.0,
-	Dec	        : 0.0,
-	}
-	
 	
 	
 var Server = mongo.Server;
@@ -18,7 +9,7 @@ var server = new Server('localhost', 27017, {auto_reconnect: true});
 var db = new Db('oaf', server);
 
 
-exports.getTaskListJson = function (callback) {
+exports.getTaskList= function (id,callback) {
 	if (!db) {
 		db.open(function(err, db) {
 		if(!err) {
@@ -26,12 +17,38 @@ exports.getTaskListJson = function (callback) {
 		}
 		});
 	}
+	var ObjectID = db.bson_serializer.ObjectID;
+
 	db.collection('task', function(err, collection) {	
-		collection.find().toArray(function(err, items) {
+		collection.find({'sequence':id}).toArray(function(err, items) {
 			if (err)
 				callback(err)
-			else
+			else{
+				callback(null,items);
+			}
+		})
+	})
+	
+	
+}	
+
+exports.getTaskListJson = function (id,callback) {
+	if (!db) {
+		db.open(function(err, db) {
+		if(!err) {
+			console.log("Connected to mongodb:oaf");
+		}
+		});
+	}
+	var ObjectID = db.bson_serializer.ObjectID;
+
+	db.collection('task', function(err, collection) {	
+		collection.find({'sequence':id}).toArray(function(err, items) {
+			if (err)
+				callback(err)
+			else{
 				callback(null,JSON.stringify(items));
+			}
 		})
 	})
 	
@@ -119,6 +136,26 @@ exports.addSeq = function(seq) {
       collection.insert(seq, {safe:true}, function(err, result) {
 		if(err)
 			console.log('error saving seq');
+      });
+	});
+}
+
+exports.getSeq = function(id,callback) {
+	if (!db) {
+		db.open(function(err, db) {
+		if(!err) {
+			console.log("Connected to mongodb:oaf");
+		}
+		});
+	}
+	db.collection('sequence', function(err, collection) {
+	var ObjectID = db.bson_serializer.ObjectID;
+     collection.find({_id:ObjectID(id)}).toArray( function(err, result) {
+		if (err)
+				callback(err)
+			else{
+				callback(null,JSON.stringify(result));
+			}
       });
 	});
 }

@@ -4,11 +4,13 @@ block script
   script(src='/javascripts/jquery.tablednd.0.7.min.js')
 
   script
-    var currentRow,currentRowSeq ; 
-    var i;
+    var currentRow,currentRowSeq ;
+
+        var i;
 
     function displayTaskList() {
-      $.getJSON('/json/actionlist',function(data){
+      $('#taskbody').empty();
+      $.getJSON('/json/actionlist',{id:currentRowSeq.attr('id')},function(data){
       i = 1;
       $.each(data, function(key, val) {
         var tr = $('<tr>').attr('id',val._id)
@@ -37,7 +39,7 @@ block script
                         currentRow = $(this).closest('tr');
                         $(this).closest('tr').addClass('info');
                     })
-                 .appendTo('#example');
+                 .appendTo('#taskbody');
           });
       $('#example').tableDnD();
       });
@@ -45,21 +47,32 @@ block script
 
 
     $(document).ready(function() {
+
         $.getJSON('/json/sequencelist',function(data){
         $.each(data, function(key, val) {
-           $('<tr>').attr('id',val._id)
-                 .append($('<td>').html(val.name))    
-                 .append($('<td>').append($('<a>').html('Execute').addClass('btn')))    
-                 .bind('click', function(event) {
+            tr = $('<tr>').attr('id',val._id)
+                 .append($('<td>').html(val.name)) ;
+                 if (val._id =='#{seqid}'){
+                  tr.addClass('info');
+                  currentRowSeq = tr;
+                  displayTaskList();
+                 }
+
+                 tr.bind('click', function(event) {
                       if (currentRowSeq)
                           currentRowSeq.removeClass('info');
-                        currentRowSeq = $(this).closest('tr');
-                        $(this).closest('tr').addClass('info');
+                      currentRowSeq = $(this).closest('tr');
+                      currentRowSeq.addClass('info');
+                      if (currentRowSeq)
+                        $.getJSON('/json/sequence',{id:currentRowSeq.attr('id')},function(data){
+                                       $('#tasklist').text('Task '+data[0].name);
+
+                         });
+                        displayTaskList();
                   })
                  .appendTo('#sequence');
           });
       });
-
       // create the Image Option form
       for ( i = 0 ; i < 4 ; i++){
         $('<div>').addClass('controls-row')
@@ -96,8 +109,12 @@ block script
           }
       })
       $('#modal-save').click(function(){
+       $('<input />').attr('type','hidden').attr('name','objectId').attr('value',currentRowSeq.attr('id'))
+                     .appendTo('#formAdd');
        $('#formAdd').submit();
+       $('#formAdd').modal({show:false});
       });
+
       $('#search').click(function(){
           var val = $('#objectName').val().toUpperCase();
           $.post('/action/searchObject', { object: val }, function (data){
@@ -112,6 +129,11 @@ block script
         $('#modal-add').modal({show:false});
         $('#modal-imageOption').modal({show:true});
       })
+
+      $('#execute').click(function(){
+         window.location.replace('/?seq='+currentRowSeq.attr('id'))
+        })
+
       $('#Action' ).change(function() {
           opt =  $(this).val();
           switch(opt){
@@ -135,6 +157,9 @@ block script
       });
       $('#object').hide();
       $('#ExposeOption').hide();
+     
+
+
      });
  
 
@@ -154,11 +179,11 @@ block content
             thead
              tr
                th Sequence name
-               th Execute
+          a.btn#execute Execute
                  
            
 
-        legend  Task list
+        legend#tasklist
         .btn-group
            button#Add.btn.btn-small.span1   Add
            button#Edit.btn.btn-small.span1   Edit
@@ -174,6 +199,7 @@ block content
              th RA
              th DEC
              th Image
+            tbody#taskbody
    .modal#modal-add.hide.fade
      .modal-header
          button.close(data-dismiss="modal",aria-hidden="true")&times;
