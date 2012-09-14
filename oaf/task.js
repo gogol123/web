@@ -38,6 +38,26 @@ exports.getTaskListJson = function (callback) {
 	
 }	
 
+exports.getSeqListJson = function (callback) {
+	if (!db) {
+		db.open(function(err, db) {
+		if(!err) {
+			console.log("Connected to mongodb:oaf");
+		}
+		});
+	}
+	db.collection('sequence', function(err, collection) {	
+		collection.find().toArray(function(err, items) {
+			if (err)
+				callback(err)
+			else
+				callback(null,JSON.stringify(items));
+		})
+	})
+	
+	
+}
+
 exports.save = function(task) {
 	if (!db) {
 		db.open(function(err, db) {
@@ -72,4 +92,33 @@ exports.searchObject = function(obj,callback) {
 	});
 }
 
+exports.removeTask = function(obj,callback) {
+	if (!db) {
+		db.open(function(err, db) {
+		if(!err) {
+			console.log("Connected to mongodb:oaf");
+		}
+		});
+	}
+	var ObjectID = db.bson_serializer.ObjectID;
+	db.collection('task', function(err, collection) {
+      collection.remove( {_id:ObjectID(obj)});
+	});
+}
 
+
+exports.addSeq = function(seq) {
+	if (!db) {
+		db.open(function(err, db) {
+		if(!err) {
+			console.log("Connected to mongodb:oaf");
+		}
+		});
+	}
+	db.collection('sequence', function(err, collection) {
+      collection.insert(seq, {safe:true}, function(err, result) {
+		if(err)
+			console.log('error saving seq');
+      });
+	});
+}

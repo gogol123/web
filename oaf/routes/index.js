@@ -144,29 +144,36 @@ exports.jsonActionList = function(req, res){
 			res.end('\n');
 		}
 	});
+};
 
+exports.jsonSeqList = function(req, res){
+	res.writeHead(200, {'content-type': 'text/json' });
+	task.getSeqListJson(function (err,list){
+		if(!err){
+			res.write( list);
+			res.end('\n');
+		}
+	});
 };
 
 
 exports.actionMount = function(req, res){
 
-	function callback (err,result){
-		if (err)
-			console.log(err);
-	}
 	switch  (req.body.action) {
 		case "Home" : 	telescope.park(callback);
 						break;
 		case "On"	: 	
 						roof.getStatus(function (err,result) {
-								if (err)
-									console.log (err);
-								else
-									if (result == "Toit ouvert")
-											telescope.powerOn(callback);
-									else {
-										console.log ("cannot power on mount aslong athe roof is not open");
-										}
+						if (err)
+							console.log (err);
+						else
+							if (result == "Toit ouvert")
+								telescope.powerOn(callback);
+							else {
+								console.log ("cannot power on mount as long athe roof is not open");
+								res.write('Power on impossible si le toit est fermé');
+								res.end();
+							 }
 										
 									
 						});
@@ -250,12 +257,55 @@ exports.actionMeteo = function(req, res){
 exports.actionAddTask = function(req, res){
 
 	var t = {};
+	var Target = {};
+	var ImageOption = new Array();
 	
 	t.Owner= req.user.username;
-	t.TaskName = req.body.TaskName;
 	t.Action = req.body.action;
 
+	if (req.body.action == 'Slew' || req.body.action == 'Slew and Expose' ){
+		Target.Name = req.body.name;
+		Target.RA = req.body.RA;
+		Target.DEC = req.body.DEC;
+		t.Target = Target;
+
+	}
+
+	if(req.body.action == 'Slew and Expose'){
+		if (req.body.ImageCheck0) {
+			ImageOption[0] = {};
+			ImageOption[0].Exposure=req.body.ImageExposure0;
+			ImageOption[0].Filter=req.body.ImageFilter0;
+			ImageOption[0].Repeate=req.body.ImageRepeate0;
+			ImageOption[0].Bin=req.body.ImageBin0;
+		}
+		if (req.body.ImageCheck1) {
+			ImageOption[1] = {};
+			ImageOption[1].Exposure=req.body.ImageExposure0;
+			ImageOption[1].Filter=req.body.ImageFilter0;
+			ImageOption[1].Repeate=req.body.ImageRepeate0;
+			ImageOption[1].Bin=req.body.ImageBin0;
+		}
+		if (req.body.ImageCheck2) {
+			ImageOption[2] = {};
+			ImageOption[2].Exposure=req.body.ImageExposure0;
+			ImageOption[2].Filter=req.body.ImageFilter0;
+			ImageOption[2].Repeate=req.body.ImageRepeate0;
+			ImageOption[2].Bin=req.body.ImageBin0;
+		}
+		if (req.body.ImageCheck3) {
+			ImageOption[3] = {};
+			ImageOption[3].Exposure=req.body.ImageExposure0;
+			ImageOption[3].Filter=req.body.ImageFilter0;
+			ImageOption[3].Repeate=req.body.ImageRepeate0;
+			ImageOption[3].Bin=req.body.ImageBin0;
+		}
+		t.ImageOption= ImageOption;
+	}
+	
 	task.save(t)
+
+	console.log(t);
     res.redirect('/task');
 
 };
@@ -273,5 +323,22 @@ exports.actionsearchObject = function(req, res){
 	});
 
 };
+exports.actiondeleteTask = function(req, res){
+
+	console.log('delete task :'+req.body.id);
+	task.removeTask(req.body.id,function (err,result) {
+
+	});
+};
 
 
+exports.actionAddSeq = function(req, res){
+
+	var seq = {};
+	
+	seq.Owner= req.user.username;
+	seq.name = req.body.seqname;
+
+	task.addSeq(seq);
+
+}

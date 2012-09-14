@@ -2,18 +2,23 @@ extends layout
 
 block script
   script(src='https://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js')
-  //link(rel='stylesheet', href='https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/themes/redmond/jquery-ui.css')
   style
      #status { text-align:center; }
 
   script
     $(document).ready(function() {
-      $('button').button();
       $('#ErrorMessage').hide();
+      $('#AlertClose').click(function(){
+          $('#ErrorMessage').hide();
+        })
       $('button' ).click(function() {	
           var id = $(this).attr('id'); 
-          $.post('/action/mount', { action: id } );
+          $.post('/action/mount', { action: id }, function (data) {
+               $('#ErrorText').text(data);
+               $('#ErrorMessage').show();
+            });
       });
+
     });
     function updateSchema() {
       $.getJSON('/json/mount',function(data){
@@ -90,10 +95,14 @@ block script
     setInterval('updateSchema();',1000); 
 block content
 
-   .alert#ErrorMessage 
-        p= message
+
+
    .row
     .span8.offset1
+     #ErrorMessage.alert-block.alert.alert-error
+         button#AlertClose.close x
+         h4 Error
+         p#ErrorText
      legend Telescope status
      span#status.span4.uneditable-input
      .row

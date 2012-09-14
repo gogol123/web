@@ -1,16 +1,35 @@
 extends layout
 
 block content
-  .container
-    p Welcome  #{user.username}
-    a(href='/toit') Toit
+  .row
+    .span8.offset1
+     #ErrorMessage.alert-block.alert.alert-error
+         button#AlertClose.close x
+         h4 Error
+         p#ErrorText
+     p Welcome  #{user.username}
+     a(href='/toit') Toit
       br
-    a(href='/mount') Monture
+     a(href='/mount') Monture
       br
-    a(href='/meteo') Meteo
+     a(href='/meteo') Meteo
       br
-    a(href='/task') Taches
+     a(href='/task') Taches
       br
-    a(href='/logout') Logout
+     a(href='/logout') Logout
        br 
+     legend Execute
+     .row
+       table#example.table.table-striped.table-bordered
+          thead
+           tr
+             th 
+                input#selectAll(type='checkbox')
+             th Task Name
+             th Action
+             th Progress
+       button.btn Start
+     legend Console
+     .row
+        textarea(rows=20).span8
   

@@ -33,7 +33,7 @@ app.configure(function(){
   app.set('port', process.env.PORT || 3000);
   app.set('views', __dirname + '/views');
   app.set('view engine', 'jade');
-  app.use(express.logger('short'));
+  app.use(express.logger('dev'));
   app.use(express.bodyParser());
   app.use(express.methodOverride());
   app.use(express.cookieParser('your secret here'));
@@ -47,7 +47,7 @@ app.configure(function(){
 });
 
 app.configure('development', function(){
-  app.use(express.errorHandler());
+//  app.use(express.errorHandler());
 });
 
 app.get('/', routes.index);
@@ -62,6 +62,7 @@ app.get('/json/roof',ensureAuthenticated,routes.jsonRoof);
 app.get('/json/mount',ensureAuthenticated,routes.jsonMount);
 app.get('/json/meteo',ensureAuthenticated,routes.jsonMeteo);
 app.get('/json/actionlist',ensureAuthenticated,routes.jsonActionList);
+app.get('/json/sequencelist',ensureAuthenticated,routes.jsonSeqList);
 
 app.post('/login',
   passport.authenticate('local', { failureRedirect: '/login', failureFlash: true }),
@@ -74,6 +75,8 @@ app.post('/login',
   app.post('/action/meteo',ensureAuthenticated,routes.actionMeteo)
   app.post('/action/addtask',ensureAuthenticated,routes.actionAddTask)
   app.post('/action/searchObject',ensureAuthenticated,routes.actionsearchObject)
+  app.post('/action/deleteTask',ensureAuthenticated,routes.actiondeleteTask)
+  app.post('/action/addSeq',ensureAuthenticated,routes.actionAddSeq)
 
 server =https.createServer(options,app).listen(app.get('port'), function(){
   console.log("Express server listening on port " + app.get('port'));
@@ -139,8 +142,6 @@ passport.deserializeUser(function(id, done) {
 
 passport.use(new LocalStrategy(
   function(username, password, done) {
-	console.log(username);
-	console.log(password);
       // Find the user by username. If there is no user with the given
       // username, or the password is not correct, set the user to `false` to
       // indicate failure and set a flash message. Otherwise, return the

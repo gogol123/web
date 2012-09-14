@@ -8,15 +8,17 @@ block script
     .capteur, .etatMoteur { width:30px;height:30px;opacity:0.6;background-color:#6E6E6E; }
     .textClass { width:60px;height:30px;font-size:150%; }
     #statusLabel { width:160px; font-weight:bold}
-  'Toit ouverture',
-  'Toit a&eacute;ration',
-  'Tympan Ouverture intermedaire'
+
   script
     var statusTable = ['Toit ferm&eacute;','Tympan Ouverture intermedaire','Tympan ouverture totale','Tympan fermeture',
                        'Tympan fermeture','Toit fermeture','Toit ouverture','Toit ouvert','Arret Urgence',
                        'Tympan fermeture','Park T&eacute;l&eacute;scope','Toit ouverture','Toit a&eacute;ration',  'Tympan Ouverture intermedaire'];
     $(document).ready(function() {
       $('button').button();
+      $('#ErrorMessage').hide();
+      $('#AlertClose').click(function(){
+          $('#ErrorMessage').hide();
+      })
       $('#ToitFerme').position({my:'left top',at:'left top',of:'#schema'});
       $('#ToitOuvert').position({my:'right top',at:'right top',of:'#schema'});
       $('#TympanOuvert').position({my:'left bottom',at:'left bottom',of:'#schema'});
@@ -33,7 +35,11 @@ block script
       $('#FermetureToit').position({my:'right',at :'right ',of :'#moteur'});
       $('button' ).click(function() {	
          var id = $(this).attr('id'); 
-         $.post('/action/roof', { action: id } );
+         if (id == 'ouvertureA' || id == 'ouvertureP' || id == 'ouvertureT') {
+              $('#ErrorText').text('Ouverture du toit etes vous sur ?');
+              $('#ErrorMessage').show();
+          }
+              //$.post('/action/roof', { action: id } );
          });
       });
     function updateSchema(){
@@ -59,6 +65,13 @@ block script
 
 
 block content
+  #ErrorMessage.alert-block.alert
+         button#AlertClose.close x
+         h4 Warning
+         p#ErrorText
+         .row.span3
+           button#oui.btn.btn-small Oui 
+           button#non.btn.btn-small Non
   legend Toit status
   #Toit.container(style='font-size:62.5%')
     #schema
@@ -80,10 +93,15 @@ block content
       #FermetureToit.etatMoteur F
     br
     .row
-      label.span2 Ouverture:
-      button#ouvertureP.btn.btn-small.span2  Partielle
-      button#ouvertureT.btn.btn-small.span2  Total
+      label.span1 Ouverture:
+      .btn-group
+        button#ouvertureA.btn.btn-small.span1  Aeration
+        button#ouvertureP.btn.btn-small.span1  Partielle
+        button#ouvertureT.btn.btn-small.span1  Total
     .row
-       button#fermeture.btn.btn-small.span2 Fermeture
+      label.span1 Fermeture
+      button#fermeture.btn.btn-small.span1 Fermeture
     .row
-       button#stop.btn.btn-small.btn-danger.span2 Stop!
+      label.span1 Arret
+      button#stop.btn.btn-small.btn-danger.span1 Stop!
+  legend Toit Log

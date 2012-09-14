@@ -4,30 +4,96 @@ block script
   script(src='/javascripts/jquery.tablednd.0.7.min.js')
 
   script
-    var currentRow ; 
-    $(document).ready(function() {
+    var currentRow,currentRowSeq ; 
+    var i;
+
+    function displayTaskList() {
       $.getJSON('/json/actionlist',function(data){
-        $.each(data, function(key, val) {
-          $('<tr>').attr('id',val.TaskName)
-                 .append($('<td>').html(val.id))		
-                 .append($('<td>').html(val.TaskName))	
-                 .append($('<td>').html(val.Action))
-                 .append($('<button>').html('option').addClass('btn').addClass('btn-small'))
-                 .bind('click', function(event) {
-                    if (currentRow)
-                      currentRow.removeClass('info');
-                    currentRow = $(this).closest('tr');
-                    $(this).closest('tr').addClass('info');
-                 })
+      i = 1;
+      $.each(data, function(key, val) {
+        var tr = $('<tr>').attr('id',val._id)
+                 .append($('<td>').append($('<input>').attr('type','checkbox')))
+                 .append($('<td>').html(i++))    
+                 .append($('<td>').html(val.Action));
+                  if (val.Target) {
+                    tr.append($('<td>').html(val.Target.Name))
+                      .append($('<td>').html(val.Target.RA))
+                      .append($('<td>').html(val.Target.DEC))
+                   }
+                  else
+                     tr.append($('<td>')).append($('<td>')).append($('<td>'));
+                  if (val.ImageOption)
+                      tr.append($('<td>').attr('style','font-size:80%')
+                                     .html(val.ImageOption[0].Filter+
+                                           ':'+val.ImageOption[0].Bin+' '
+                                            +val.ImageOption[0].Repeate+'X'
+                                           +val.ImageOption[0].Exposure+'s'
+                                     ))
+                  else
+                    tr.append($('<td>'));
+                    tr.bind('click', function(event) {
+                        if (currentRow)
+                          currentRow.removeClass('info');
+                        currentRow = $(this).closest('tr');
+                        $(this).closest('tr').addClass('info');
+                    })
                  .appendTo('#example');
-        });
+          });
       $('#example').tableDnD();
       });
-      $('#Add' ).click(function() {	
+    }
+
+
+    $(document).ready(function() {
+        $.getJSON('/json/sequencelist',function(data){
+        $.each(data, function(key, val) {
+           $('<tr>').attr('id',val._id)
+                 .append($('<td>').html(val.name))    
+                 .append($('<td>').append($('<a>').html('Execute').addClass('btn')))    
+                 .bind('click', function(event) {
+                      if (currentRowSeq)
+                          currentRowSeq.removeClass('info');
+                        currentRowSeq = $(this).closest('tr');
+                        $(this).closest('tr').addClass('info');
+                  })
+                 .appendTo('#sequence');
+          });
+      });
+
+      // create the Image Option form
+      for ( i = 0 ; i < 4 ; i++){
+        $('<div>').addClass('controls-row')
+                  .append($('<input>').addClass('span1').attr('type','checkbox').attr('name','ImageCheck'+i))
+                  .append($('<select>').addClass('span2').attr('name','ImageFilter'+i)
+                      .append($('<option>').html('Luminance'))
+                      .append($('<option>').html('Red'))
+                      .append($('<option>').html('Green'))
+                      .append($('<option>').html('Blue'))
+                      .append($('<option>').html('Halpha')))
+                  .append($('<input>').addClass('span1').addClass('input-small').attr('placeholder','Exposure').attr('name','ImageExposure'+i))
+                  .append($('<select>').addClass('span1').attr('name','ImageBin'+i)
+                       .append($('<option>').html('Bin 1'))
+                       .append($('<option>').html('Bin 2')))
+                  .append($('<input>').addClass('span1').addClass('input-small').attr('placeholder','repeate').attr('name','ImageRepeate'+i))
+                  .appendTo('#ExposeOptions')
+      }
+
+      $('#Add').click(function() {  
         $('#modal-add').modal({show:true});
       })
+      $('#AddSeq').click(function() {	
+        $('#modal-addseq').modal({show:true});
+      })
+      $('#modal-saveseq').click(function(){
+       $('#formAddSeq').submit();
+      });
+
        $('#Delete' ).click(function() {	
-        confirm('Delete item :'+currentRow.attr('id'));
+         if (confirm('Delete item :'+currentRow.attr('id'))) {
+            $.post('/action/deleteTask', { id: currentRow.attr('id') }, function (data){
+            })
+            $('#' + currentRow.attr('id')).remove();
+          }
       })
       $('#modal-save').click(function(){
        $('#formAdd').submit();
@@ -46,7 +112,29 @@ block script
         $('#modal-add').modal({show:false});
         $('#modal-imageOption').modal({show:true});
       })
+      $('#Action' ).change(function() {
+          opt =  $(this).val();
+          switch(opt){
+            case  'Ouverture Toit':
+            case  'Fermeture Toit':
+            case  'Power on monture':
+            case  'Power off monture':
+                              $('#object').hide();
+                              $('#ExposeOption').hide();
+                              break;
+            case  'Slew' :
+                              $('#object').show();
+                              $('#ExposeOption').hide();
+                              break;
+            case 'Slew and Expose':
+                            $('#object').show();
+                            $('#ExposeOption').show();
+                            break;
 
+          }
+      });
+      $('#object').hide();
+      $('#ExposeOption').hide();
      });
  
 
@@ -56,7 +144,20 @@ block content
    .alert#ErrorMessage 
         p= message
     .row
-      .span6.offset1
+      .span8.offset1
+        legend  Sequence list
+        .btn-group
+           button#AddSeq.btn.btn-small.span1   Add
+           button#DeleteSeq.btn.btn-small.span1   Delete
+
+          table#sequence.table.table-striped.table-bordered
+            thead
+             tr
+               th Sequence name
+               th Execute
+                 
+           
+
         legend  Task list
         .btn-group
            button#Add.btn.btn-small.span1   Add
@@ -65,10 +166,14 @@ block content
         table#example.table.table-striped.table-bordered
           thead
            tr
+             th 
+                input#selectAll(type='checkbox')
              th id
-             th Name
              th Action
-             th Option
+             th Object Name
+             th RA
+             th DEC
+             th Image
    .modal#modal-add.hide.fade
      .modal-header
          button.close(data-dismiss="modal",aria-hidden="true")&times;
@@ -76,107 +181,52 @@ block content
      .modal-body
       form#formAdd.form-horizontal(method="post", action="/action/addtask")
        .control-group
-         label.control-label Task Name 
-         .controls
-              input(type="text",placeholder="Task name",name='TaskName')
-       .control-group
          label.control-label Action 
          .controls
-           select(name = 'action')
+           select#Action(name = 'action')
              option(value='Ouverture Toit') Ouverture Toit
              option(value='Fermeture Toit') Fermeture Toit
              option(value='Power on monture') Power on monture
              option(value='Power off monture') Power off monture
              option(value='Slew') Slew
              option(value='Slew and Expose') Slew and Expose
-       .control-group
+       #object
+        legend Object Info
+        .control-group
          label.control-label Object Name 
          .controls
            .form-search
               input#objectName(type="text",placeholder="Object name",name='name')
               a.btn#search Search 
-       .control-group
+        .control-group
          label.control-label Link 
          .controls
            a#ln(target="_blank")
-       .control-group
-         label.control-label RA 
+        .control-group
+         label.control-label Coord 
          .controls
-           input#rainput(type="text",placeholder="RA",name='RA')  
-       .control-group
-         label.control-label DEC 
-         .controls
-           input#Dec(type="text",placeholder="DEC",name='DEC')     
-       .control-group
-         label.control-label Expose Option 
-         .controls
-           a#ImageOption.btn Option     
+          .form-inline
+              label RA :
+              input.input-small.span1#rainput(type="text",placeholder="0h00mn0s",name='RA')  
+              label DEC : 
+              input.input-small.span1#Dec(type="text",placeholder="0d00mn0s",name='DEC')    
+       #ExposeOption
+        legend Exposure Info
+        #ExposeOptions.row
      .modal-footer
        button.btn(data-dismiss="modal",aria-hidden="true") Close
        a#modal-save.btn.btn-primary  Save
-
-   .modal#modal-imageOption.hide.fade
-    .modal-header
-      button.close(data-dismiss="modal",aria-hidden="true")&times;
-      .h2 Image options
-
-    .modal-body
-      .row
-       .span6
-        form.form-inline
-          label.checkbox
-            input(type="checkbox",checked)      1
-          select.span2
-            option  Luminance
-            option  Red
-            option  Green
-            option  Blue
-            option  Ha-Alpha
-          input.input-small.span1(placeholder="Expose")
-          select.span1
-            option bin 1
-            option bin 2
-          input.input-small.span1(placeholder="Repeat")
-        form.form-inline
-          input(type="checkbox") 2
-          select.span2
-            option  Luminance
-            option(selected)  Red
-            option  Green
-            option  Blue
-            option  Ha-Alpha
-          input.input-small.span1(placeholder="Expose")
-          select.span1
-           option  bin 1
-            option bin 2
-          input.input-small.span1(placeholder="Repeat")       
-         form.form-inline
-          input(type="checkbox") 3
-          select.span2
-            option  Luminance
-            option  Red
-            option(selected)  Green
-            option  Blue
-            option  Ha-Alpha
-          input.input-small.span1(placeholder="Expose")
-          select.span1
-           option  bin 1
-            option bin 2
-          input.input-small.span1(placeholder="Repeat")
-         form.form-inline
-          input(type="checkbox") 1
-          select.span2
-            option  Luminance
-            option  Red
-            option  Green
-            option(selected)  Blue
-            option  Ha-Alpha
-          input.input-small.span1(placeholder="Expose")
-          select.span1
-           option  bin 1
-            option bin 2
-          input.input-small.span1(placeholder="Repeat")
-
-    .modal-footer
+   .modal#modal-addseq.hide.fade
+     .modal-header
+         button.close(data-dismiss="modal",aria-hidden="true")&times;
+         .h2 Add Sequence
+     .modal-body
+      form#formAddSeq.form-horizontal(method="post", action="/action/addSeq")
+       .control-group
+         label.control-label Sequence Name 
+         .controls
+              input#objectName(type="text",placeholder="Sequence name",name='seqname')
+     .modal-footer
        button.btn(data-dismiss="modal",aria-hidden="true") Close
-       a#modal-save.btn.btn-primary  Save
+       a#modal-saveseq.btn.btn-primary  Save
+
