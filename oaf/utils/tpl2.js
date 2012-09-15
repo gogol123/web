@@ -1,6 +1,6 @@
 var net = require('net');
 var util =require('./util.js');
-//var Location = require("./maximjs").Location;
+var Location = require("./maximjs").Location;
 
 var ntm;
 var ParkPosition ={
@@ -121,13 +121,13 @@ exports.slew = function(ra,dec,location,callback) {
 	d=util.dms_to_deg(D)
 	console.log("Slewing to :"+r+" : "+d);
 	ntmAnwser = "";
-/*
+
 	ntm.write("400 SET POINTING.TARGET.RA="+r.toString()+"\n");
 	ntm.write("400 SET POINTING.TARGET.DEC="+d.toString()+"\n");
 	ntm.write("400 SET POINTING.TARGET.RA_V=0.0\n");
 	ntm.write("400 SET POINTING.TARGET.DEC_V=0.0\n");
 	ntm.write("400 SET POINTING.TRACK=386\n");
-*/
+
 	setTimeout(exports.getNTMStatus,20000,isTrack);
 	setCallback= callback;
 }

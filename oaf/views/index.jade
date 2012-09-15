@@ -5,7 +5,7 @@ block script
   script(src="/socket.io/socket.io.js")
   script
 
-    var socket = io.connect('https://localhost');
+    var socket = io.connect('https://oaf.no-ip.info');
       socket.on('UpdateSequence', function (data) {
           text = $('#log').text();
           if (text)

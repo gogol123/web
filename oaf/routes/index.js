@@ -4,7 +4,7 @@ var sio = require('socket.io');
 
 var roof = require('../utils/roof.js');
 var telescope = require('../utils/tpl2.js');
-//var Location = require("../utils/maximjs").Location;
+var Location = require("../utils/maximjs").Location;
 var task = require ('../task.js');
 
 var ToitStatus;
@@ -21,7 +21,7 @@ var MeteoSeuil = {
 	};
 
 
-//var Osenbach = new Location(47.9926716666666735,7.2065583333333336);
+var Osenbach = new Location(47.9926716666666735,7.2065583333333336);
 
 var CounterMeteo=0;
 function WatchMeteo(err,result){
@@ -391,14 +391,49 @@ exports.actionStartSequence = function(req, res){
 			async.forEachSeries(list,function(item,callback){
 				switch (item.Action) {
 					case  'Ouverture Toit':
+									socket.broadcast.emit('UpdateSequence',{msg:'ouverture toit'});
+									roof.Open("OuvertureP",callback);
+									break;
 		            case  'Fermeture Toit':
+		            				socket.broadcast.emit('UpdateSequence',{msg:'fermeture toit'});
+									roof.Close(callback);
+									break;
+
 		            case  'Power on monture':
+		            				socket.broadcast.emit('UpdateSequence',{msg:'monture power on'});
+									telescope.powerOn(callback);
+									break;
 		            case  'Power off monture':
+		            		        socket.broadcast.emit('UpdateSequence',{msg:'monture power off'});
+		            		        telescope.park(function (err){
+		            		        	if (!err)
+												telescope.powerOff(callback);
+										else
+												callback(err);
+									});
+									break;
+
 		            case  'Slew' :
+		            				socket.broadcast.emit('UpdateSequence',{msg:'telescope slew: '+item.Target.RA+' '+item.Target.DEC});
+		            				telescope.slew(item.Target.RA,item.Target.DEC,Osenbach,callback);
+		            				break;
 		            case 'Slew and Expose':
+		            		        socket.broadcast.emit('UpdateSequence',{msg:'telescope slew: '+item.Target.RA+' '+item.Target.DEC});
+		            				telescope.slew(item.Target.RA,item.Target.DEC,Osenbach,function(err){
+		            				var option = {};
+		            				option.Repeate = item.ImageOption[0].Repeate;
+		            				option.ExposureTime=item.
+		            				option.ObjectName = item.ImageOption[0].Exposure;
+
+		            						if (!err)
+		            							ccd.Expose(option,callback);
+		            						else
+		            							callback(err)
+		            				});
+		            				break;
 		            default :
-							socket.emit('UpdateSequence',{msg:'tache:'+item.Action});
-							callback(null);
+							
+							callback('error occcur');
 					}
 
 			},
