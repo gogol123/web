@@ -389,63 +389,78 @@ exports.actionStartSequence = function(req, res){
     task.getTaskList(req.body.id,function (err,list){
 		if(!err){
 			async.forEachSeries(list,function(item,callback){
-				switch (item.Action) {
-					case  'Ouverture Toit':
-									socket.broadcast.emit('UpdateSequence',{msg:'ouverture toit'});
-									roof.Open("OuvertureP",callback);
-									break;
-		            case  'Fermeture Toit':
-		            				socket.broadcast.emit('UpdateSequence',{msg:'fermeture toit'});
-									roof.Close(callback);
-									break;
-
-		            case  'Power on monture':
-		            				socket.broadcast.emit('UpdateSequence',{msg:'monture power on'});
-									telescope.powerOn(callback);
-									break;
-		            case  'Power off monture':
-		            		        socket.broadcast.emit('UpdateSequence',{msg:'monture power off'});
-		            		        telescope.park(function (err){
-		            		        	if (!err)
-												telescope.powerOff(callback);
-										else
-												callback(err);
-									});
-									break;
-
-		            case  'Slew' :
-		            				socket.broadcast.emit('UpdateSequence',{msg:'telescope slew: '+item.Target.RA+' '+item.Target.DEC});
-		            				telescope.slew(item.Target.RA,item.Target.DEC,Osenbach,callback);
-		            				break;
-		            case 'Slew and Expose':
-		            		        socket.broadcast.emit('UpdateSequence',{msg:'telescope slew: '+item.Target.RA+' '+item.Target.DEC});
-		            				telescope.slew(item.Target.RA,item.Target.DEC,Osenbach,function(err){
-		            				var option = {};
-		            				option.Repeate = item.ImageOption[0].Repeate;
-		            				option.ExposureTime=item.
-		            				option.ObjectName = item.ImageOption[0].Exposure;
-
-		            						if (!err)
-		            							ccd.Expose(option,callback);
-		            						else
-		            							callback(err)
-		            				});
-		            				break;
-		            default :
-							
-							callback('error occcur');
-					}
-
-			},
-			function(err){
-				console.log(err)
-			})
+				ProcessTask(item,callback);
+				},
+				function(err){
+					console.log(err)
+			});
 		}
 	});
 }
 
+function ProcessTask(item,callback){
+	switch (item.Action) {
+			case  'Ouverture Toit':
+										socket.broadcast.emit('UpdateSequence',{msg:'ouverture toit'});
+										roof.Open("OuvertureP",callback);
+										break;
+			case  'Fermeture Toit':
+										socket.broadcast.emit('UpdateSequence',{msg:'fermeture toit'});
+										roof.Close(callback);
+										break;
 
+			case  'Power on monture':
+										socket.broadcast.emit('UpdateSequence',{msg:'monture power on'});
+										telescope.powerOn(callback);
+										break;
+			case  'Power off monture':
+								        socket.broadcast.emit('UpdateSequence',{msg:'monture power off'});
+								        telescope.park(function (err){
+								        	if (!err)
+												telescope.powerOff(callback);
+											else
+												callback(err);
+										});
+										break;
 
+			case  'Slew' :
+										socket.broadcast.emit('UpdateSequence',{msg:'telescope slew: '+item.Target.RA+' '+item.Target.DEC});
+										telescope.slew(item.Target.RA,item.Target.DEC,Osenbach,callback);
+										break;
+			case 'Slew and Expose':     // slew to target
+								        socket.broadcast.emit('UpdateSequence',{msg:'telescope slew: '+item.Target.RA+' '+item.Target.DEC});
+										telescope.slew(item.Target.RA,item.Target.DEC,Osenbach,function(err){
+										//Expose
+											async.forEachSeries(item.ImageOption,function(image,callback2){
+												var options = {};
+												options.ObjectName = item.Target.Name;
+												options.Repeate = image.Repeate;
+												options.Binning = image.Bin;
+												option.Filter = decodeFilter(image.Filter)
+												ccd.Expose(item.ImageOption,callback2);
+												},
+												function(err){
+													callback2(err)
+												});
+										});
+										break;
+			default :
+										callback('Error ProcessTask :default case');
+	}
+}
+
+function decodeFilter(filterName){
+	switch (filterName){
+		case 'Luminance': return 3;
+		case 'Red' 		: return 0;
+		case 'Green' 	: return 1;
+		case 'Blue' 	: return 2;
+		case 'Halpha' 	: return 4;
+		default :
+					console.log('error decoding filter :'+filterName+' unknow');
+
+	}
+}
 //websocket
 
 exports.setIo = function(i){
