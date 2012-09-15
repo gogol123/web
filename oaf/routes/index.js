@@ -1,10 +1,12 @@
 var async = require('async');
 var sio = require('socket.io');
+var exec = require('child_process').exec
 
 
 var roof = require('../utils/roof.js');
 var telescope = require('../utils/tpl2.js');
 var Location = require("../utils/maximjs").Location;
+var ccd = require('../utils/ccd.js');
 var task = require ('../task.js');
 
 var ToitStatus;
@@ -20,6 +22,7 @@ var MeteoSeuil = {
 	RainCheck:'on',
 	};
 
+var seqText = '';
 
 var Osenbach = new Location(47.9926716666666735,7.2065583333333336);
 
@@ -189,21 +192,13 @@ exports.actionMount = function(req, res){
 		case "Home" : 	telescope.park(callback);
 						break;
 		case "On"	: 	
-						roof.getStatus(function (err,result) {
-						if (err)
-							console.log (err);
-						else
-							if (result == "Toit ouvert")
-								telescope.powerOn(callback);
-							else {
-								console.log ("cannot power on mount as long athe roof is not open");
-								res.write('Power on impossible si le toit est fermé');
-								res.end();
-							 }
-										
-									
-						});
-						
+						telescope.powerOn(function (err){
+								if (err) {
+									console.log (err);
+									res.write(err);
+									res.end();
+								}
+							 });
 									
 									
 						break;
@@ -309,24 +304,24 @@ exports.actionAddTask = function(req, res){
 		}
 		if (req.body.ImageCheck1) {
 			ImageOption[1] = {};
-			ImageOption[1].Exposure=req.body.ImageExposure0;
-			ImageOption[1].Filter=req.body.ImageFilter0;
-			ImageOption[1].Repeate=req.body.ImageRepeate0;
-			ImageOption[1].Bin=req.body.ImageBin0;
+			ImageOption[1].Exposure=req.body.ImageExposure1;
+			ImageOption[1].Filter=req.body.ImageFilter1;
+			ImageOption[1].Repeate=req.body.ImageRepeate1;
+			ImageOption[1].Bin=req.body.ImageBin1;
 		}
 		if (req.body.ImageCheck2) {
 			ImageOption[2] = {};
-			ImageOption[2].Exposure=req.body.ImageExposure0;
-			ImageOption[2].Filter=req.body.ImageFilter0;
-			ImageOption[2].Repeate=req.body.ImageRepeate0;
-			ImageOption[2].Bin=req.body.ImageBin0;
+			ImageOption[2].Exposure=req.body.ImageExposure2;
+			ImageOption[2].Filter=req.body.ImageFilter2;
+			ImageOption[2].Repeate=req.body.ImageRepeate2;
+			ImageOption[2].Bin=req.body.ImageBin2;
 		}
 		if (req.body.ImageCheck3) {
 			ImageOption[3] = {};
-			ImageOption[3].Exposure=req.body.ImageExposure0;
-			ImageOption[3].Filter=req.body.ImageFilter0;
-			ImageOption[3].Repeate=req.body.ImageRepeate0;
-			ImageOption[3].Bin=req.body.ImageBin0;
+			ImageOption[3].Exposure=req.body.ImageExposure3;
+			ImageOption[3].Filter=req.body.ImageFilter3;
+			ImageOption[3].Repeate=req.body.ImageRepeate3;
+			ImageOption[3].Bin=req.body.ImageBin3;
 		}
 		t.ImageOption= ImageOption;
 	}
@@ -388,11 +383,18 @@ exports.actionStartSequence = function(req, res){
 	res.end();
     task.getTaskList(req.body.id,function (err,list){
 		if(!err){
+			seqText = '';
 			async.forEachSeries(list,function(item,callback){
 				ProcessTask(item,callback);
 				},
 				function(err){
-					console.log(err)
+					if (err){
+					CriticalError(err);
+					socket.emit('SequenceError',{msg:err});
+					}
+					else{
+						EmitUpdate('Sequence completed');
+					}
 			});
 		}
 	});
@@ -400,21 +402,21 @@ exports.actionStartSequence = function(req, res){
 
 function ProcessTask(item,callback){
 	switch (item.Action) {
-			case  'Ouverture Toit':
-										socket.broadcast.emit('UpdateSequence',{msg:'ouverture toit'});
+			case  'Ouverture Toit': 	
+										EmitUpdate('ouverture toit');
 										roof.Open("OuvertureP",callback);
 										break;
-			case  'Fermeture Toit':
-										socket.broadcast.emit('UpdateSequence',{msg:'fermeture toit'});
+			case  'Fermeture Toit': 	
+										EmitUpdate('fermeture toit');
 										roof.Close(callback);
 										break;
 
-			case  'Power on monture':
-										socket.broadcast.emit('UpdateSequence',{msg:'monture power on'});
+			case  'Power on monture': 	
+										EmitUpdate('monture power on');
 										telescope.powerOn(callback);
 										break;
-			case  'Power off monture':
-								        socket.broadcast.emit('UpdateSequence',{msg:'monture power off'});
+			case  'Power off monture': 	
+								        EmitUpdate('monture power off');
 								        telescope.park(function (err){
 								        	if (!err)
 												telescope.powerOff(callback);
@@ -423,24 +425,27 @@ function ProcessTask(item,callback){
 										});
 										break;
 
-			case  'Slew' :
-										socket.broadcast.emit('UpdateSequence',{msg:'telescope slew: '+item.Target.RA+' '+item.Target.DEC});
+			case  'Slew' : 				
+										EmitUpdate('telescope slew: '+item.Target.RA+' '+item.Target.DEC);
 										telescope.slew(item.Target.RA,item.Target.DEC,Osenbach,callback);
 										break;
 			case 'Slew and Expose':     // slew to target
-								        socket.broadcast.emit('UpdateSequence',{msg:'telescope slew: '+item.Target.RA+' '+item.Target.DEC});
+								        EmitUpdate('telescope slew: '+item.Target.RA+' '+item.Target.DEC);
 										telescope.slew(item.Target.RA,item.Target.DEC,Osenbach,function(err){
 										//Expose
-											async.forEachSeries(item.ImageOption,function(image,callback2){
+										EmitUpdate('start expose : ');
+										async.forEachSeries(item.ImageOption,function(image,callback2){
 												var options = {};
 												options.ObjectName = item.Target.Name;
-												options.Repeate = image.Repeate;
-												options.Binning = image.Bin;
-												option.Filter = decodeFilter(image.Filter)
-												ccd.Expose(item.ImageOption,callback2);
+												options.index = image.Repeate;
+												options.Binning = decodeBinning(image.Bin);
+												options.Filter = decodeFilter(image.Filter);
+												options.expose = image.Exposure;
+												EmitUpdate('Expose filter'+image.Filter);
+												ccd.Expose(options,callback2,socket);
 												},
 												function(err){
-													callback2(err)
+													callback(err)
 												});
 										});
 										break;
@@ -461,6 +466,30 @@ function decodeFilter(filterName){
 
 	}
 }
+
+function decodeBinning(binning){
+	switch (binning){
+		case 'Bin 1' : return 1;
+		case 'Bin 2' : return 2;
+		default :
+					console.log('error decoding binning :'+binning+' unknow');
+
+	}
+}
+
+
+function EmitUpdate(text){
+	var  now = new Date();
+	var  txt = now.getHours()+':'+now.getMinutes()+':'+now.getSeconds()+' :: '+text;
+	socket.emit('UpdateSequence',{msg:txt});
+	seqText = seqText + '\n' + txt;
+	console.log(txt);
+}
+
+function CriticalError(err) {
+	console.log("Critical Error occur :"+err);
+	child = exec('"C:/Program Files (x86)/Skype/Phone/skype.exe" /callto:"'+'philippelang');
+}
 //websocket
 
 exports.setIo = function(i){
@@ -468,7 +497,7 @@ exports.setIo = function(i){
 
 	io.sockets.on('connection', function (sock) {
 		socket=sock;
-  		sock.emit('UpdateSequence', { hello: 'world' });
+  		sock.emit('UpdateSequence', { msg: seqText });
   });
 }
 

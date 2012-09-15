@@ -1,6 +1,7 @@
 var net = require('net');
 var util =require('./util.js');
 var Location = require("./maximjs").Location;
+var roof = require('./roof.js')
 
 var ntm;
 var ParkPosition ={
@@ -59,9 +60,18 @@ var TelescopStatus = {
 };
 	
 exports.powerOn = function(callback){
-	ntmAnwser = "";
-	ntm.write("200 SET CABINET.POWER=1\n");
-	setCallback= callback;
+	roof.getStatus(function (err,result) {
+		if (err)
+			callback(err);
+		else 
+			if (result == "Toit ouvert"){
+				ntmAnwser = "";
+				ntm.write("200 SET CABINET.POWER=1\n");
+				setCallback= callback;
+			}
+			else
+				callback("can not power on with closed roof");
+	});
 }
 
 exports.powerOff = function(callback){
@@ -109,27 +119,32 @@ function isTrack(err,result) {
 exports.slew = function(ra,dec,location,callback) {
 
 	//decode ra and dec
+	try {
+		var R = ra.decodeRa();
+		var D = dec.decodeDec();
+		
+		var hz = location.EqtoHz(util.hms_to_deg(R),util.dms_to_deg(D));
+
+		if (hz.alt < 5.0) 
+			callback (new Error("Error occur in slewing telescope : object is below (deg!"));
+		r=util.hms_to_hdec(R);
+		d=util.dms_to_deg(D)
+		console.log("Slewing to :"+r+" : "+d);
 	
-	var R = ra.decodeRa();
-	var D = dec.decodeDec();
-	
-	var hz = location.EqtoHz(util.hms_to_deg(R),util.dms_to_deg(D));
+		ntmAnwser = "";
 
-	if (hz.alt < 5.0) 
-		callback (new Error("Error occur in slewing telescope : object is below (deg!"));
-	r=util.hms_to_hdec(R);
-	d=util.dms_to_deg(D)
-	console.log("Slewing to :"+r+" : "+d);
-	ntmAnwser = "";
+		ntm.write("400 SET POINTING.TARGET.RA="+r.toString()+"\n");
+		ntm.write("400 SET POINTING.TARGET.DEC="+d.toString()+"\n");
+		ntm.write("400 SET POINTING.TARGET.RA_V=0.0\n");
+		ntm.write("400 SET POINTING.TARGET.DEC_V=0.0\n");
+		ntm.write("400 SET POINTING.TRACK=386\n");
 
-	ntm.write("400 SET POINTING.TARGET.RA="+r.toString()+"\n");
-	ntm.write("400 SET POINTING.TARGET.DEC="+d.toString()+"\n");
-	ntm.write("400 SET POINTING.TARGET.RA_V=0.0\n");
-	ntm.write("400 SET POINTING.TARGET.DEC_V=0.0\n");
-	ntm.write("400 SET POINTING.TRACK=386\n");
-
-	setTimeout(exports.getNTMStatus,20000,isTrack);
-	setCallback= callback;
+		setTimeout(exports.getNTMStatus,20000,isTrack);
+		setCallback= callback;
+	}
+	catch(err){
+		callback("slew"+err.toString());
+	}
 }
 
 exports.startTrack= function(){

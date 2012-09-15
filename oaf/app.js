@@ -4,6 +4,7 @@
  */
 
 process.on('uncaughtException', function(err) {
+  console.log('Major Error uncaughtException');
   console.log(err);
 });
 
@@ -165,5 +166,6 @@ passport.use(new LocalStrategy(
 
 
 var io = sio.listen(server,options);
+io.set('log level', 0);
 routes.setIo(io);
 

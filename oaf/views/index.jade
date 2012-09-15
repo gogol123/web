@@ -7,12 +7,11 @@ block script
 
     var socket = io.connect('https://oaf.no-ip.info');
       socket.on('UpdateSequence', function (data) {
-          text = $('#log').text();
-          if (text)
-            text=text+"\n"+data.msg;
-          else
-            text=data.msg;
-          $('#log').text(text);
+           $('<p>').append( $('<small>').html(data.msg)).appendTo('#log');
+       });
+        socket.on('SequenceError', function (data) {
+          $('#ErrorText').text(data.msg)
+          $('#ErrorMessage').show(data.msg)
        });
 
     $(document).ready(function() {
@@ -21,13 +20,7 @@ block script
       $('#AlertClose').click(function(){
           $('#ErrorMessage').hide();
         })
-      $('button' ).click(function() { 
-          var id = $(this).attr('id'); 
-          $.post('/action/mount', { action: id }, function (data) {
-               $('#ErrorText').text(data);
-               $('#ErrorMessage').show();
-            });
-      });
+
 
         $('#ExecuteList').empty();
         $.getJSON('/json/actionlist',{id:'#{seqid}'} ,function(data){
@@ -45,6 +38,7 @@ block script
             });
         });
         $('#Start').click(function(){
+            $('#log').empty();
             $.post('/action/startSequence',{id:'#{seqid}'})
           })
     });
@@ -80,6 +74,6 @@ block content
           tbody#executebody
        button.btn.btn-warning#Start Start
      legend Console
-     .row
-        textarea#log(rows=20).span8
+     .row(style='height:300px')
+        p#log.span8
   

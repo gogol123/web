@@ -1,13 +1,14 @@
 var MaximCCD = require("./maximjs").MaximCCD
 var fs = require('fs');
 var async = require('async');
+var sio = require('socket.io');
 
 var maximCCD = new MaximCCD();
 
 
 var defaultPath = "C:/Users/philippe/tmp";
 
-exports.Expose = function (options,callback) {
+exports.Expose = function (options,callback,socket){
 	if (!options.ImagePath) {
 		today = new Date();
 		dayPath = defaultPath+"/"+today.getFullYear()+"-"+(today.getMonth()+1)+"-"+today.getDate();
@@ -19,7 +20,7 @@ exports.Expose = function (options,callback) {
 		nbImage = options.index;
 	else
 		nbImage=1;
-	
+			
 function repeater(i,callback) {
 	if (i < nbImage) {
 		options.ImageIndex = i
@@ -27,7 +28,10 @@ function repeater(i,callback) {
 			if (err)
 				callback(err);
 			else {
-				console.log("Image :"+i+" done :",result);
+				 var txt = "Image :"+i+" done :"+result;
+				console.log(txt);
+				if (socket)
+					socket.emit('UpdateSequence',{msg:txt});
 				repeater(i+1,callback);
 			}
 		});

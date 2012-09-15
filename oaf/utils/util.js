@@ -8,7 +8,7 @@ var roof = require('./roof.js');
 String.prototype.decodeRa=function(){ 
 //decode ra and dec
 	
-	var pattern = new RegExp("([0-9]*)[h \s]([0-9]*)[\s m ]([0-9]*)s?");
+	var pattern = new RegExp("([0-9]*)[h \s]([0-9]*.?[0-9]*)[\s m ]?([0-9]*)s?");
 	var result = this.match(pattern);
 	
 	
@@ -28,7 +28,7 @@ String.prototype.decodeRa=function(){
 String.prototype.decodeDec=function(){ 
 //decode ra and dec
 	
-	var pattern = new RegExp("(-?[0-9]*)[\s d]([0-9]*)[\s m]([0-9]*)s?");
+	var pattern = new RegExp("([\+\-]?[0-9]*)[\s d]([0-9]*)[\s m]?([0-9]*)s?");
 	var result =this.match(pattern);
 	
 	if (!result )
