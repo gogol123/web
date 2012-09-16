@@ -40,6 +40,7 @@ function powerOnCallback() {
 			if (result.Referenced == 1.0) {
 				clearInterval(isRefId);
 				setCallback(null);
+				console.log("power on completed");
 			}	
 	}
 	isRefId = setInterval(exports.getNTMStatus,2000,isReferenced);
@@ -70,7 +71,7 @@ exports.powerOn = function(callback){
 				setCallback= callback;
 			}
 			else
-				callback("can not power on with closed roof");
+				callback(new Error("can not power on with closed roof"));
 	});
 }
 
@@ -82,25 +83,21 @@ exports.powerOff = function(callback){
 }
 
 function parkCallback() {
-	function isPark(err,result) {
-		console.log("IsPark");
-		console.log(result);
-		if(err && !setCallback)
-			setCallback(err);
-		else
-			if   ((result.CurrHA > (ParkPosition.ha -1.0)) && (result.CurrHA < (ParkPosition.ha +1.0) ) &&
-				(result.CurrDec > (ParkPosition.dec -1.0))&&(result.CurrDec < (ParkPosition.dec +1.0))) {
-				clearInterval(isParkId);
-				//if (!setCallback) {
-					setCallback(null);
-				//	}
-					
-				}
+	function isPark(err, result) {
+		if (err && !setCallback) setCallback(err);
+		else if ((result.CurrHA > (ParkPosition.ha - 1.0)) && 
+				 (result.CurrHA < (ParkPosition.ha + 1.0)) &&
+				 (result.CurrDec > (ParkPosition.dec - 1.0)) && 
+				 (result.CurrDec < (ParkPosition.dec + 1.0))) {
+			clearInterval(isParkId);
+			//if (!setCallback) {
+			setCallback(null);
+			console.log("park completed");
+			//	}
+		}
 	}
-	isParkId = setInterval(exports.getNTMStatus,1000,isPark);
+	isParkId = setInterval(exports.getNTMStatus, 1000, isPark);
 }
-
- 
 
 exports.park = function(callback){
 	ntmAnwser = "";
@@ -112,6 +109,7 @@ exports.park = function(callback){
 
 function isTrack(err,result) {	
 		setCallback(null);
+		console.log("slew completed");
 	}
 	
 
@@ -139,7 +137,7 @@ exports.slew = function(ra,dec,location,callback) {
 		ntm.write("400 SET POINTING.TARGET.DEC_V=0.0\n");
 		ntm.write("400 SET POINTING.TRACK=386\n");
 
-		setTimeout(exports.getNTMStatus,20000,isTrack);
+		setTimeout(exports.getNTMStatus,30000,isTrack);
 		setCallback= callback;
 	}
 	catch(err){

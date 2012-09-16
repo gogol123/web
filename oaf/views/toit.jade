@@ -35,11 +35,11 @@ block script
       $('#FermetureToit').position({my:'right',at :'right ',of :'#moteur'});
       $('button' ).click(function() {	
          var id = $(this).attr('id'); 
-         if (id == 'ouvertureA' || id == 'ouvertureP' || id == 'ouvertureT') {
-              $('#ErrorText').text('Ouverture du toit etes vous sur ?');
-              $('#ErrorMessage').show();
-          }
-              //$.post('/action/roof', { action: id } );
+         // if (id == 'ouvertureA' || id == 'ouvertureP' || id == 'ouvertureT') {
+         //      $('#ErrorText').text('Ouverture du toit etes vous sur ?');
+         //      $('#ErrorMessage').show();
+         //  }
+              $.post('/action/roof', { action: id } );
          });
       });
     function updateSchema(){

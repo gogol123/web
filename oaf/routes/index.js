@@ -22,7 +22,11 @@ var MeteoSeuil = {
 	RainCheck:'on',
 	};
 
-var seqText = '';
+var seqText = new Array();
+var seqIndex = 0
+var seqProgress = new Array();
+var seqProgressIndex = 0;
+
 
 var Osenbach = new Location(47.9926716666666735,7.2065583333333336);
 
@@ -55,9 +59,11 @@ function Deg2hms(angle,ss) {
 	return str;
 	}
 
-setInterval(roof.getJson,1000,function(err,result){
-	if (err)
+setInterval(roof.getJson,2000,function(err,result){
+	if (err){
 		console.log("Error getting roof status");
+		console.log(err);
+	}
 	else
 		ToitSatus=result;
 	});
@@ -169,22 +175,24 @@ exports.jsonSeqList = function(req, res){
 		}
 	});
 };
-exports.jsonSeq = function(req, res){
-
-	res.writeHead(200, {'content-type': 'text/json' });
-	task.getSeq(req.query["id"],function (err,list){
-		if(!err){
-			res.write( list);
-		}
-	req.session.CurrentSequenceId=req.query["id"];
-	res.end();
 
 
-
+exports.jsonSeq = function(req, res) {
+	res.writeHead(200, {'content-type': 'text/json'});
+	task.getSeq(req.query["id"], function(err, list) {
+		if (!err) res.write(list);
+		req.session.CurrentSequenceId = req.query["id"];
+		res.end();
 	});
-
 };
 
+exports.jsonTask = function(req, res) {
+	res.writeHead(200, {'content-type': 'text/json'});
+	task.getTaskJson(req.query["id"], function(err, list) {
+		if (!err) res.write(list);
+		res.end();
+	});
+};
 
 exports.actionMount = function(req, res){
 
@@ -284,7 +292,9 @@ exports.actionAddTask = function(req, res){
 	
 	t.Owner= req.user.username;
 	t.Action = req.body.action;
-	t.sequence = req.body.objectId;
+	t.sequence = req.body.SeqObjectId;
+	t._id = req.body.objectId;
+	console.log(t);
 
 	if (req.body.action == 'Slew' || req.body.action == 'Slew and Expose' ){
 		Target.Name = req.body.name;
@@ -376,29 +386,36 @@ var io;
 var socket;
 
 
-
-exports.actionStartSequence = function(req, res){
+exports.actionStartSequence = function(req, res) {
 	res.redirect('/');
-	req.session=null;
+	req.session = null;
 	res.end();
-    task.getTaskList(req.body.id,function (err,list){
-		if(!err){
-			seqText = '';
-			async.forEachSeries(list,function(item,callback){
-				ProcessTask(item,callback);
-				},
-				function(err){
-					if (err){
+	task.getTaskList(req.body.id, function(err, list) {
+		if (!err) {
+			seqIndex = 0;
+			seqText = new Array();
+			seqProgress = new Array();
+			seqProgressIndex = 0;
+			async.forEachSeries(list, function(item, callback) {
+				ProcessTask(item, callback);
+				socket.emit('ProgressSequence', {
+					id: item._id
+				});
+				seqProgress[seqProgressIndex++] = item._id;
+			}, function(err) {
+				if (err) {
 					CriticalError(err);
-					socket.emit('SequenceError',{msg:err});
-					}
-					else{
-						EmitUpdate('Sequence completed');
-					}
+					socket.emit('SequenceError', {
+						msg: err.message
+					});
+				} else {
+					EmitUpdate('Sequence completed');
+				}
 			});
 		}
 	});
 }
+
 
 function ProcessTask(item,callback){
 	switch (item.Action) {
@@ -417,12 +434,10 @@ function ProcessTask(item,callback){
 										break;
 			case  'Power off monture': 	
 								        EmitUpdate('monture power off');
-								        telescope.park(function (err){
-								        	if (!err)
-												telescope.powerOff(callback);
-											else
-												callback(err);
-										});
+								        telescope.park(function(err) {
+								        	if (!err) telescope.powerOff(callback);
+								        	else callback(err);
+								        });
 										break;
 
 			case  'Slew' : 				
@@ -482,12 +497,12 @@ function EmitUpdate(text){
 	var  now = new Date();
 	var  txt = now.getHours()+':'+now.getMinutes()+':'+now.getSeconds()+' :: '+text;
 	socket.emit('UpdateSequence',{msg:txt});
-	seqText = seqText + '\n' + txt;
+	seqText[seqIndex++]= txt;
 	console.log(txt);
 }
 
 function CriticalError(err) {
-	console.log("Critical Error occur :"+err);
+	console.log("Critical Error occur :"+err.message);
 	child = exec('"C:/Program Files (x86)/Skype/Phone/skype.exe" /callto:"'+'philippelang');
 }
 //websocket
@@ -497,7 +512,7 @@ exports.setIo = function(i){
 
 	io.sockets.on('connection', function (sock) {
 		socket=sock;
-  		sock.emit('UpdateSequence', { msg: seqText });
+  		sock.emit('UpdateSequence', {all: seqText, progressAll : seqProgress });
   });
 }
 

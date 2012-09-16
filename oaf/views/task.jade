@@ -15,7 +15,7 @@ block script
       $.each(data, function(key, val) {
         var tr = $('<tr>').attr('id',val._id)
                  .append($('<td>').append($('<input>').attr('type','checkbox')))
-                 .append($('<td>').html(i++))    
+                 .append($('<td>').html(i++).attr('name','indice'))    
                  .append($('<td>').html(val.Action));
                   if (val.Target) {
                     tr.append($('<td>').html(val.Target.Name))
@@ -24,13 +24,19 @@ block script
                    }
                   else
                      tr.append($('<td>')).append($('<td>')).append($('<td>'));
-                  if (val.ImageOption)
-                      tr.append($('<td>').attr('style','font-size:80%')
-                                     .html(val.ImageOption[0].Filter+
-                                           ':'+val.ImageOption[0].Bin+' '
-                                            +val.ImageOption[0].Repeate+'X'
-                                           +val.ImageOption[0].Exposure+'s'
-                                     ))
+                  if (val.ImageOption){
+                      td = $('<td>').attr('style','font-size:80%');
+                      var  html = '' ;
+                      for (i= 0; i < val.ImageOption.length; i++){
+                               html +=val.ImageOption[i].Filter+
+                                           ':'+val.ImageOption[i].Bin+':'
+                                            +val.ImageOption[i].Repeate+'X'
+                                           +val.ImageOption[i].Exposure+'s';
+                                html+= '<br>';
+                        }
+                        td.html(html);
+                        tr.append(td);
+                  }
                   else
                     tr.append($('<td>'));
                     tr.bind('click', function(event) {
@@ -76,23 +82,51 @@ block script
       // create the Image Option form
       for ( i = 0 ; i < 4 ; i++){
         $('<div>').addClass('controls-row')
-                  .append($('<input>').addClass('span1').attr('type','checkbox').attr('name','ImageCheck'+i))
-                  .append($('<select>').addClass('span2').attr('name','ImageFilter'+i)
+                  .append($('<input>').addClass('span1').attr('type','checkbox').attr('name','ImageCheck'+i).attr('id','ImageCheck'+i))
+                  .append($('<select>').addClass('span2').attr('name','ImageFilter'+i).attr('id','ImageFilter'+i)
                       .append($('<option>').html('Luminance'))
                       .append($('<option>').html('Red'))
                       .append($('<option>').html('Green'))
                       .append($('<option>').html('Blue'))
                       .append($('<option>').html('Halpha')))
-                  .append($('<input>').addClass('span1').addClass('input-small').attr('placeholder','Exposure').attr('name','ImageExposure'+i))
+                  .append($('<input>').addClass('span1').addClass('input-small').attr('placeholder','Exposure').attr('name','ImageExposure'+i).attr('id','ImageExposure'+i))
                   .append($('<select>').addClass('span1').attr('name','ImageBin'+i)
                        .append($('<option>').html('Bin 1'))
                        .append($('<option>').html('Bin 2')))
-                  .append($('<input>').addClass('span1').addClass('input-small').attr('placeholder','repeate').attr('name','ImageRepeate'+i))
+                  .append($('<input>').addClass('span1').addClass('input-small').attr('placeholder','repeate').attr('name','ImageRepeate'+i).attr('id','ImageRepeate'+i))
                   .appendTo('#ExposeOptions')
       }
 
       $('#Add').click(function() {  
         $('#modal-add').modal({show:true});
+      })     
+       $('#Edit').click(function() {  
+        //Update dialogue
+        if (currentRow){
+        $.getJSON('/json/task',{id:currentRow.attr('id')},function(data){
+          $.each(data, function(key, val) {
+            console.log(val);
+             $('#Action' ).val(val.Action);
+             if (val.Action == 'Slew' || val.Action == 'Slew and Expose'){
+                  $('#object').show();
+                  $('#objectName').val(val.Target.Name);
+                  $('#rainput').val(val.Target.RA);
+                  $('#Dec').val(val.Target.DEC);
+             }
+             if (val.Action == 'Slew and Expose'){
+                $('#ExposeOption').show();
+                for (ii=0 ; ii < val.ImageOption.length; ii++){
+                  $('#ImageCheck'+ii).attr('checked',true);
+                  $('#ImageFilter'+ii).val(val.ImageOption[ii].Filter);
+                  $('#ImageBin'+ii).val(val.ImageOption[ii].Bin);
+                  $('#ImageExposure'+ii).val(val.ImageOption[ii].Exposure);
+                  $('#ImageRepeate'+ii).val(val.ImageOption[ii].Repeate);
+                }
+             }
+          });
+        });
+      }
+       $('#modal-add').modal({show:true});
       })
       $('#AddSeq').click(function() {	
         $('#modal-addseq').modal({show:true});
@@ -109,7 +143,10 @@ block script
           }
       })
       $('#modal-save').click(function(){
-       $('<input />').attr('type','hidden').attr('name','objectId').attr('value',currentRowSeq.attr('id'))
+       $('<input />').attr('type','hidden').attr('name','SeqObjectId').attr('value',currentRowSeq.attr('id'))
+                     .appendTo('#formAdd');
+        if (currentRow)
+            $('<input />').attr('type','hidden').attr('name','objectId').attr('value',currentRow.attr('id'))
                      .appendTo('#formAdd');
        $('#formAdd').submit();
        $('#formAdd').modal({show:false});
@@ -238,7 +275,7 @@ block content
               input.input-small.span1#Dec(type="text",placeholder="0d00mn0s",name='DEC')    
        #ExposeOption
         legend Exposure Info
-        #ExposeOptions.row
+        #ExposeOptions.row.span6
      .modal-footer
        button.btn(data-dismiss="modal",aria-hidden="true") Close
        a#modal-save.btn.btn-primary  Save

@@ -55,42 +55,42 @@ exports.getTaskListJson = function (id,callback) {
 	
 }	
 
-exports.getSeqListJson = function (callback) {
+exports.getSeqListJson = function(callback) {
 	if (!db) {
 		db.open(function(err, db) {
-		if(!err) {
-			console.log("Connected to mongodb:oaf");
-		}
+			if (!err) console.log("Connected to mongodb:oaf");
 		});
 	}
-	db.collection('sequence', function(err, collection) {	
+	db.collection('sequence', function(err, collection) {
 		collection.find().toArray(function(err, items) {
-			if (err)
-				callback(err)
-			else
-				callback(null,JSON.stringify(items));
+			if (err) callback(err)
+			else callback(null, JSON.stringify(items));
 		})
 	})
-	
-	
 }
 
 exports.save = function(task) {
 	if (!db) {
 		db.open(function(err, db) {
-		if(!err) {
-			console.log("Connected to mongodb:oaf");
-		}
+			if (!err) console.log("Connected to mongodb:oaf");
 		});
 	}
 	db.collection('task', function(err, collection) {
-      collection.insert(task, {safe:true}, function(err, result) {
-		if(err)
-			console.log('error saving task');
-      });
+		if (task._id) {
+			var ObjectID = db.bson_serializer.ObjectID;
+			db.collection('task', function(err, collection) {
+				collection.remove({
+					_id: ObjectID(task._id)
+				});
+			});
+		}
+		collection.insert(task, {
+			safe: true
+		}, function(err, result) {
+			if (err) console.log('error saving task');
+		});
 	});
 }
-
 exports.searchObject = function(obj,callback) {
 	if (!db) {
 		db.open(function(err, db) {
@@ -157,5 +157,24 @@ exports.getSeq = function(id,callback) {
 				callback(null,JSON.stringify(result));
 			}
       });
+	});
+}
+
+exports.getTaskJson = function(id, callback) {
+	if (!db) {
+		db.open(function(err, db) {
+			if (!err) console.log("Connected to mongodb:oaf");
+		});
+	}
+	db.collection('task', function(err, collection) {
+		var ObjectID = db.bson_serializer.ObjectID;
+		collection.find({
+			_id: ObjectID(id)
+		}).toArray(function(err, result) {
+			if (err) callback(err)
+			else {
+				callback(null, JSON.stringify(result));
+			}
+		});
 	});
 }

@@ -3,7 +3,6 @@ var tel = require('./tpl2.js');
 var async = require('async');
 var utils = require('util');
 var roof = require('./roof.js');
-
 	
 String.prototype.decodeRa=function(){ 
 //decode ra and dec
@@ -74,7 +73,9 @@ exports.hms_to_hdec = function( heq ) {
 	return angle ;
 }
 
-
+exports.wait = function(time,callback){
+	setTimeout(function(){callback(null)}, time);
+}
 exports.SlewExpose = function (options,tele,ccd,location,callback){
 	async.series({
 		Slew: function(call){

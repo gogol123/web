@@ -5,7 +5,7 @@
 
 process.on('uncaughtException', function(err) {
   console.log('Major Error uncaughtException');
-  console.log(err);
+  console.log(new Date()+err.stack);
 });
 
 
@@ -36,7 +36,7 @@ app.configure(function(){
   app.set('port', process.env.PORT || 3000);
   app.set('views', __dirname + '/views');
   app.set('view engine', 'jade');
-  app.use(express.logger('dev'));
+  //app.use(express.logger('dev'));
   app.use(express.bodyParser());
   app.use(express.methodOverride());
   app.use(express.cookieParser('your secret here'));
@@ -75,6 +75,7 @@ app.get('/json/meteo',ensureAuthenticated,routes.jsonMeteo);
 app.get('/json/actionlist',ensureAuthenticated,routes.jsonActionList);
 app.get('/json/sequencelist',ensureAuthenticated,routes.jsonSeqList);
 app.get('/json/sequence',ensureAuthenticated,routes.jsonSeq);
+app.get('/json/task',ensureAuthenticated,routes.jsonTask);
 
 
   
