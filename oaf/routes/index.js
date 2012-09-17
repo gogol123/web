@@ -6,7 +6,8 @@ var exec = require('child_process').exec
 var roof = require('../utils/roof.js');
 var telescope = require('../utils/tpl2.js');
 var Location = require("../utils/maximjs").Location;
-var ccd = require('../utils/ccd.js');
+//var ccd = require('../utils/ccd.js');
+var ccd;
 var task = require ('../task.js');
 
 var ToitStatus;
@@ -61,7 +62,8 @@ function Deg2hms(angle,ss) {
 
 setInterval(roof.getJson,2000,function(err,result){
 	if (err){
-		console.log("Error getting roof status");
+		now = new Date();
+		console.log(now.getHours()+":"+now.getMinutes()+":"+now.getSeconds()+ "  Error getting roof status");
 		console.log(err);
 	}
 	else
