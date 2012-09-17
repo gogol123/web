@@ -23,14 +23,11 @@ var statusTable = [
 	'Tympan Ouverture intermedaire'
 	];
 
-exports.getJson = function(callback) {
-	var options = {
-		host: '192.168.200.177',
-		path: '/json/capteur',
-	};
-	var body = "";
 
-	function getStatusInternal(callback) {
+ function getUrl(options,callback){
+		
+	var body = "";
+	function getUrlInternal(callback) {
 		var req = http.request(options, function(res) {
 			res.on('data', function(chunk) {
 				body += chunk;
@@ -53,7 +50,7 @@ exports.getJson = function(callback) {
 
 	function repeater(i, callback) {
 		if (i < 7) {
-			getStatusInternal(function(err, result) {
+			getUrlInternal(function(err, result) {
 				if (err)  util.wait(1000,function(){repeater(i + 1, callback)});
 			     else callback(null, result)
 			});
@@ -61,18 +58,6 @@ exports.getJson = function(callback) {
 	}
 	repeater(0, callback);
 }
-
-exports.getStatus = function(callback) {
-	exports.getJson(function(err, result) {
-		if (err) callback(err);
-		else {
-			ToitStatus = JSON.parse(result);
-			callback(null, statusTable[ToitStatus.CurrentState]);
-		}
-	})
-}
-
-	
 
 function HandelRoof(action) {
 	var post_data = querystring.stringify({
@@ -97,6 +82,28 @@ function HandelRoof(action) {
 }
 
 
+exports.getJson = function(callback) {
+	var options = {
+		host: '192.168.200.177',
+		path: '/json/capteur',
+	};
+	getUrl(options, function(err, result) {
+		if (err) callback(err);
+		else callback(null, result);
+	})
+}
+
+exports.getStatus = function(callback) {
+	exports.getJson(function(err, result) {
+		if (err) callback(err);
+		else {
+			ToitStatus = JSON.parse(result);
+			callback(null, statusTable[ToitStatus.CurrentState]);
+		}
+	})
+}
+
+
 exports.Open = function(action, callback) {
 	function isRoofOpen(callback) {
 		exports.getStatus(function(err, result) {
@@ -105,12 +112,12 @@ exports.Open = function(action, callback) {
 				callback(new Error("Error occur in opening roof : ROOF IS NOT OPEN!"));
 			} else {
 				callback(null, "Roof Open");
-				 console.log("Roof Open");
-				}
+				console.log("Roof Open");
+			}
 
 		});
 	}
-
+	
 	exports.getStatus(function(err, result) {
 		if (err) callback(err);
 		else {
@@ -154,25 +161,20 @@ exports.Stop = function(callback) {
 					
 }
 
+// Meteo interface
 
-exports.getMeteo = function (callback) {
+exports.getMeteo = function(callback) {
 	var options = {
-	  host: '192.168.200.178',
-	  path: '/jsonSensor',
+		host: '192.168.200.178',
+		path: '/jsonSensor',
 	};
-	var meteoObject ;
-	var body ="";
-	var req = http.request(options, function(res) {
-	  res.on('data', function (chunk) {
-		body += chunk;
-		});
-	  res.on('end',function() {
-		meteoObject = JSON.parse(body);
-		callback(null,meteoObject.cloudsensor);
-	  });
-	});
-	req.end();
+
+	getUrl(options, function(err, result) {
+		if (err) callback(err);
+		else callback(null, JSON.parse(result));
+	})
 }
+
 
 
 
