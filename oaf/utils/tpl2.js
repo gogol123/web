@@ -32,21 +32,7 @@ var StatusCallback;
 var setCallback =null;
  
 
-function powerOnCallback() {
-	function isReferenced(err,result) {
-		if(err)
-			setCallback(err);
-		else
-			if (result.Referenced == 1.0) {
-				clearInterval(isRefId);
-				setCallback(null);
-				console.log("power on completed");
-			}	
-	}
-	isRefId = setInterval(exports.getNTMStatus,2000,isReferenced);
-}
-
-var TelescopStatus = {
+ var TelescopStatus = {
 	Power : 0,
 	Referenced : 0.0,
 	Globalstatus : 0,
@@ -60,18 +46,28 @@ var TelescopStatus = {
 
 };
 	
-exports.powerOn = function(callback){
-	roof.getStatus(function (err,result) {
-		if (err)
-			callback(err);
-		else 
-			if (result == "Toit ouvert"){
-				ntmAnwser = "";
-				ntm.write("200 SET CABINET.POWER=1\n");
-				setCallback= callback;
-			}
-			else
-				callback(new Error("can not power on with closed roof"));
+
+function powerOnCallback() {
+	function isReferenced(err, result) {
+		if (err) setCallback(err);
+		else if (result.Referenced == 1.0) {
+			clearInterval(isRefId);
+			console.log("power on completed");
+			setCallback(null);
+		}
+	}
+	isRefId = setInterval(exports.getNTMStatus, 2000, isReferenced);
+}
+
+
+exports.powerOn = function(callback) {
+	roof.getStatus(function(err, result) {
+		if (err) callback(err);
+		else if (result == "Toit ouvert") {
+			ntmAnwser = "";
+			ntm.write("200 SET CABINET.POWER=1\n");
+			setCallback = callback;
+		} else callback(new Error("can not power on with closed roof"));
 	});
 }
 
@@ -85,93 +81,75 @@ exports.powerOff = function(callback){
 function parkCallback() {
 	function isPark(err, result) {
 		if (err && setCallback) setCallback(err);
-		else if ((result.CurrHA > (ParkPosition.ha - 1.0)) && 
-				 (result.CurrHA < (ParkPosition.ha + 1.0)) &&
-				 (result.CurrDec > (ParkPosition.dec - 1.0)) && 
-				 (result.CurrDec < (ParkPosition.dec + 1.0))) {
+		else if ((result.CurrHA > (ParkPosition.ha - 1.0)) && (result.CurrHA < (ParkPosition.ha + 1.0)) && (result.CurrDec > (ParkPosition.dec - 1.0)) && (result.CurrDec < (ParkPosition.dec + 1.0))) {
 			clearInterval(isParkId);
-			//if (!setCallback) {
-			setCallback(null);
 			console.log("park completed");
-			//	}
+			if (setCallback) setCallback(null);
 		}
 	}
-	isParkId = setInterval(exports.getNTMStatus, 1000, isPark);
+	isParkId = setInterval(exports.getNTMStatus, 2000, isPark);
 }
 
-exports.park = function(callback){
+exports.park = function(callback) {
 	ntmAnwser = "";
 	ntm.write("300 SET HA.TARGETPOS=0.0;DEC.TARGETPOS=-41.0\n");
-	setCallback= callback;
+	setCallback = callback;
 }
 
 
-
-function isTrack(err,result) {	
-	if (err){
-		if (setCallack)
-				setCallback(err)
-	}
-	else
-		if ( (TelescopStatus.HAMotionstate  & 8 ) && (TelescopStatus.DecMotionstate  & 8 ) ){
-				clearInterval(isTrackId);
-				util.wait(2000,function() {
-					setCallback(null);
-					exports.startTrack();
-					console.log("slew completed");
-				})
+function isTracking(err, result) {
+	if (err) {
+		if (setCallack) setCallback(err)
+	} else if ((TelescopStatus.HAMotionstate & 8) && (TelescopStatus.DecMotionstate & 8)) {
+		clearInterval(isTrackId);
+		util.wait(2000, function() {
+			console.log("slew completed");
+			setCallback(null);
+			exports.startTrack();
+		})
 	}
 }
 	
 
-
-exports.slew = function(ra,dec,location,callback) {
-
-	//decode ra and dec
+exports.slew = function(ra, dec, location, callback) {
 	try {
 
 		var R = ra.decodeRa();
 		var D = dec.decodeDec();
-		
+
 		exports.stopTrack();
-		util.wait(1000,function () {
-			var hz = location.EqtoHz(util.hms_to_deg(R),util.dms_to_deg(D));
+		util.wait(1000, function() {
+			var hz = location.EqtoHz(util.hms_to_deg(R), util.dms_to_deg(D));
 
-			if (hz.alt < 5.0) 
-				callback (new Error("Error occur in slewing telescope : object is below horizon (deg!"));
-			r=util.hms_to_hdec(R);
-			d=util.dms_to_deg(D)
-			console.log("Slewing to :"+r+" : "+d);
-		
+			if (hz.alt < 5.0) callback(new Error("Error occur in slewing telescope : object is below horizon (deg!"));
+			r = util.hms_to_hdec(R);
+			d = util.dms_to_deg(D)
+			console.log("Slewing to :" + r + " : " + d);
+
 			ntmAnwser = "";
-
-			ntm.write("400 SET POINTING.TARGET.RA="+r.toString()+"\n");
-			ntm.write("400 SET POINTING.TARGET.DEC="+d.toString()+"\n");
+			ntm.write("400 SET POINTING.TARGET.RA=" + r.toString() + "\n");
+			ntm.write("400 SET POINTING.TARGET.DEC=" + d.toString() + "\n");
 			ntm.write("400 SET POINTING.TARGET.RA_V=0.0\n");
 			ntm.write("400 SET POINTING.TARGET.DEC_V=0.0\n");
-			ntm.write("400 SET POINTING.TRACK=386\n");
 			console.log('slew commande sent');
 
-			isTrackId = setInterval(exports.getNTMStatus, 1000, isTrack);
-			setCallback= callback;
+			isTrackId = setInterval(exports.getNTMStatus, 2000, isTracking);
+			setCallback = callback;
 		});
-	}
-	catch(err){
-		callback(new Error("slew"+err.toString()));
-	}
+	} catch (err)
+	callback(new Error("slew" + err.toString()));
 }
 
-exports.startTrack= function(){
+exports.startTrack = function() {
 	ntmAnwser = "";
 	ntm.write("100 SET POINTING.TRACK=386\n");
 }
 
-exports.stopTrack= function()
-{
+exports.stopTrack = function() {
 	ntmAnwser = "";
 	ntm.write("100 SET POINTING.TRACK=0\n");
 }
-exports.clearError = function(){
+exports.clearError = function() {
 	ntmAnwser = "";
 	ntm.write("100 SET CABINET.STATUS.CLEAR=1\n");
 
@@ -179,12 +157,12 @@ exports.clearError = function(){
 
 
 
-exports.getNTMStatus = function (callback) {
+exports.getNTMStatus = function(callback) {
 	ntmAnwser = "";
-	StatusCallback=callback;
+	StatusCallback = callback;
 	ntm.write('10 GET CABINET.POWER_STATE;CABINET.REFERENCED;CABINET.STATUS.GLOBAL;POINTING.TRACK;');
 	ntm.write('HA.CURRPOS;HA.MOTION_STATE;DEC.CURRPOS;DEC.TARGETPOS;DEC.MOTION_STATE;POINTING.TARGET.RA;POINTING.TARGET.DEC\n');
-	
+
 
 }
 
@@ -197,8 +175,7 @@ exports.NTMConnect = function() {
 				//	console.log(ntmAnwser);
 				TelescopStatus.CurrHA = parseFloat(ntmAnwser.match(HAPattern)[1]);
 				TelescopStatus.CurrDec = parseFloat(ntmAnwser.match(DECPattern)[1]);
-				power = ntmAnwser.match(PowerStatePattern)[1];
-				if (power) TelescopStatus.Power = parseFloat(ntmAnwser.match(PowerStatePattern)[1]);
+				TelescopStatus.Power = parseFloat(ntmAnwser.match(PowerStatePattern)[1]);
 				TelescopStatus.Referenced = parseFloat(ntmAnwser.match(ReferendedPattern)[1]);
 				TelescopStatus.Globalstatus = parseFloat(ntmAnwser.match(GlobalStatusPattern)[1]);
 				TelescopStatus.Track = parseInt(ntmAnwser.match(TrackPattern)[1]);
@@ -212,10 +189,7 @@ exports.NTMConnect = function() {
 			if (data.toString().search(CmdSetCompletePattern) != -1) if (setCallback) setCallback(null);
 			if (data.toString().search(CmdPowerOnPattern) != -1) powerOnCallback();
 			if (data.toString().search(CmdParkPattern) != -1) parkCallback();
-			if (data.toString().search(CmdSlewPattern) != -1){console.log('slew cmd executed');}
-
-
-
+			if (data.toString().search(CmdSlewPattern) != -1) console.log('slew cmd executed');
 		});
 
 		ntm.on('error', function(err) {
@@ -226,6 +200,7 @@ exports.NTMConnect = function() {
 		ntm.write('01 SET SERVER.CONNECTION.EVENTMASK=0\n');
 	});
 }
+
 exports.NTMDisconnect = function() {
 	ntm.end('DISCONNECT');
 }

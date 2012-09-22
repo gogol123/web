@@ -3,6 +3,8 @@ extends layout
 block script
 
   script(src="/socket.io/socket.io.js")
+  script(src='/javascripts/updatestatus.js')
+
   script
 
     var socket = io.connect('https://oaf.no-ip.info');
@@ -54,6 +56,18 @@ block script
           })
     });
 
+    function updateSchema() {
+    $.getJSON('/json/mount', function(data) {
+      UpdateTelescopeStatus(data, $('#telStatus'));
+    });
+    $.getJSON('/json/roof', function(data) {
+      $('#toitStatus').text = data.TextStatus;
+      $('#toitStatus').css('background-color', 'red')
+      if (data.TextStatus == 'Toit ferme') $('#toitStatus').css('background-color', 'white');
+      if (data.TextStatus == 'Toit ouvert') $('#toitStatus').css('background-color', 'green');
+    });
+  }
+
 block content
   .row
     .span8.offset1
@@ -66,10 +80,10 @@ block content
      .span6
         .row
               label.span2 Toit
-              span#status.span4.uneditable-input
+              span#toitStatus.span4.uneditable-input
         .row 
               label.span2 Telescope
-              span#status.span4.uneditable-input
+              span#telStatus.span4.uneditable-input
      legend Control
      .span6
         .row

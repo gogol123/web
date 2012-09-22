@@ -10,9 +10,6 @@ block script
     #statusLabel { width:160px; font-weight:bold}
 
   script
-    var statusTable = ['Toit ferm&eacute;','Tympan Ouverture intermedaire','Tympan ouverture totale','Tympan fermeture',
-                       'Tympan fermeture','Toit fermeture','Toit ouverture','Toit ouvert','Arret Urgence',
-                       'Tympan fermeture','Park T&eacute;l&eacute;scope','Toit ouverture','Toit a&eacute;ration',  'Tympan Ouverture intermedaire'];
     $(document).ready(function() {
       $('button').button();
       $('#ErrorMessage').hide();
@@ -54,8 +51,8 @@ block script
       $('#FermetureTympan').css('background-color',((data.FermetureTympan==1)?'red':'#6E6E6E'));
       $('#OuvertureToit').css('background-color',((data.OuvertureToit==1)?'red':'#6E6E6E'));
       $('#FermetureToit').css('background-color',((data.FermetureToit==1)?'red':'#6E6E6E'));
-      $('#statusLabel').text(statusTable[data.CurrentState]);
-      if (data.CurrentState==8) 
+      $('#statusLabel').text(data.TextStatus);
+      if (data.TextStatus=='Arret Urgence') 
          $('#statusLabel').css('color','red');
       else
         $('#statusLabel').css('color','black');

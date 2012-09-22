@@ -28,6 +28,20 @@ var seqIndex = 0
 var seqProgress = new Array();
 var seqProgressIndex = 0;
 
+var statusTable = [	'Toit ferme', 
+					'Tympan Ouverture intermedaire', 
+					'Tympan ouverture totale', 
+					'Tympan fermeture', 
+					'Tympan fermeture', 
+					'Toit fermeture', 
+					'Toit ouverture', 
+					'Toit ouvert', 
+					'Arret Urgence', 
+					'Tympan fermeture', 
+					'Park Telescope', 
+					'Toit ouverture', 
+					'Toit aeration', 
+					'Tympan Ouverture intermedaire'];
 
 var Osenbach = new Location(47.9926716666666735,7.2065583333333336);
 
@@ -53,15 +67,16 @@ function WatchMeteo(err,result){
 
 
 
-setInterval(roof.getJson,2000,function(err,result){
-	if (err){
+setInterval(roof.getJson, 2000, function(err, result) {
+	if (err) {
 		now = new Date();
-		console.log(now.getHours()+":"+now.getMinutes()+":"+now.getSeconds()+ "  Error getting roof status");
+		console.log(now.getHours() + ":" + now.getMinutes() + ":" + now.getSeconds() + "  Error getting roof status");
 		console.log(err);
+	} else {
+		ToitSatus = result;
+		ToitSatus.TextStatus = statusTable[result.CurrentState];
 	}
-	else
-		ToitSatus=result;
-	});
+});
 	
 telescope.NTMConnect();
 setInterval(telescope.getNTMStatus,1000,function(err,result){

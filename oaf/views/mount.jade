@@ -2,6 +2,7 @@ extends layout
 
 block script
   script(src='https://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js')
+  script(src='/javascripts/updatestatus.js')
   style
      #status { text-align:center; }
 
@@ -22,41 +23,7 @@ block script
     });
     function updateSchema() {
       $.getJSON('/json/mount',function(data){
-        // gestion status
-        if (data.Power == 0.0) {
-           $('#status').text("off");
-           $('#status').css('background-color','white');
-           $('#status').css('color','black');
-           //$('#target').hide();
-        } 
-        else {
-        $('#target').show();
-        if (data.Power >= 0.0 && data.Power < 1.0 ) {
-           $('#status').text("Operational (Standby)");
-           $('#status').css('background-color','white');
-        } else
-        if (data.Power == 1.0) {
-           if (data.Referenced >= 0.0 && data.Referenced <= 1.0) {
-              $('#status').text("Referencing");
-              $('#status').css('background-color','yellow');
-           }
-           if (data.Referenced  == 1.0) {
-              $('#status').text("Operational");
-              $('#status').css('background-color','green');
-              $('#status').css('color','white');
-           }
-        }
-        }
-        if (data.Globalstatus != 0.0 ) {
-           $('#status').text("Operational (Error)");
-           $('#status').css('background-color','red');
-           $('#status').css('color','white');
-        }
-        if (data.Power == -1.0 ) {
-           $('#status').text("Emergency Off");
-           $('#status').css('background-color','yellow');
-           $('#status').css('color','red');
-        }
+        UpdateTelescopeStatus(data,$('#status'));
          $('#HA').text(" "+ Math.floor (data.CurrHA/15)+" h "+Math.floor ((data.CurrHA/15-Math.floor (data.CurrHA/15))*60)+" \"");
          $('#DEC').text(" "+data.CurrDec.toFixed(2)+" d");
          if (data.Track == 0) {
