@@ -7,28 +7,16 @@ var Db = mongo.Db;
 
 var server = new Server('localhost', 27017, {auto_reconnect: true});
 var db = new Db('oaf', server);
-var ObjectID = db.bson_serializer.ObjectID;
 
 
-function OpenDatabase() {
+exports.getTaskList= function (id,callback) {
 	if (!db) {
 		db.open(function(err, db) {
-			if (!err) console.log("Connected to mongodb:oaf");
+		if(!err) {
+			console.log("Connected to mongodb:oaf");
+		}
 		});
 	}
-<<<<<<< HEAD
-}
-
-
-exports.getTaskList = function(id, callback) {
-	OpenDatabase();
-	db.collection('task', function(err, collection) {
-		collection.find({
-			'sequence': id
-		}).toArray(function(err, items) {
-			if (err) callback(err)
-			else callback(null, items);
-=======
 	var ObjectID = db.bson_serializer.ObjectID;
 	db.collection('task', function(err, collection) {	
 		collection.find({'sequence':id}).sort({Order:1}).toArray(function(err, items) {
@@ -37,17 +25,22 @@ exports.getTaskList = function(id, callback) {
 			else{
 				callback(null,items);
 			}
->>>>>>> sqve
 		})
 	})
-}
+	
+	
+}	
 
-<<<<<<< HEAD
-exports.getTaskListJson = function(id, callback) {
-	exports.getTask(id,function (err,items){
-	if (err) callback(err)
-	else callback(null, JSON.stringify(items));
-=======
+exports.getTaskListJson = function (id,callback) {
+	if (!db) {
+		db.open(function(err, db) {
+		if(!err) {
+			console.log("Connected to mongodb:oaf");
+		}
+		});
+	}
+	var ObjectID = db.bson_serializer.ObjectID;
+
 	db.collection('task', function(err, collection) {	
 		collection.find({'sequence':id}).sort({Order:1}).toArray(function(err, items) {
 			if (err)
@@ -56,12 +49,17 @@ exports.getTaskListJson = function(id, callback) {
 				callback(null,JSON.stringify(items));
 			}
 		})
->>>>>>> sqve
 	})
-}
+	
+	
+}	
 
 exports.getSeqListJson = function(callback) {
-	OpenDatabase();
+	if (!db) {
+		db.open(function(err, db) {
+			if (!err) console.log("Connected to mongodb:oaf");
+		});
+	}
 	db.collection('sequence', function(err, collection) {
 		collection.find().toArray(function(err, items) {
 			if (err) callback(err)
@@ -71,15 +69,13 @@ exports.getSeqListJson = function(callback) {
 }
 
 exports.save = function(task) {
-	OpenDatabase();
+	if (!db) {
+		db.open(function(err, db) {
+			if (!err) console.log("Connected to mongodb:oaf");
+		});
+	}
 	db.collection('task', function(err, collection) {
 		if (task._id) {
-<<<<<<< HEAD
-			db.collection('task', function(err, collection) {
-				collection.remove({
-					_id: ObjectID(task._id)
-				});
-=======
 			var ObjectID = db.bson_serializer.ObjectID;
 
 			task._id = ObjectID(task._id);
@@ -88,7 +84,6 @@ exports.save = function(task) {
 				collection.update({
 					'_id': task._id
 				},task,{upsert:true, safe:true},function (err){if (err) console.log(err);});
->>>>>>> sqve
 			});
 		}
 		else
@@ -99,31 +94,38 @@ exports.save = function(task) {
 		});
 	});
 }
-
-exports.searchObject = function(obj, callback) {
-	OpenDatabase();
-	db.collection('sac', function(err, collection) {
-		collection.find({
-			OBJECT: obj
-		}).toArray(function(err, result) {
-			if (err) callback(err);
-			else callback(null, result);
+exports.searchObject = function(obj,callback) {
+	if (!db) {
+		db.open(function(err, db) {
+		if(!err) {
+			console.log("Connected to mongodb:oaf");
+		}
 		});
+	}
+	db.collection('sac', function(err, collection) {
+      collection.find( {OBJECT:obj}).toArray( function(err, result) {
+		if(err)
+			callback(err);
+		else 
+			callback(null,result);
+      });
 	});
 }
 
-exports.removeTask = function(obj, callback) {
-	OpenDatabase();
+exports.removeTask = function(obj,callback) {
+	if (!db) {
+		db.open(function(err, db) {
+		if(!err) {
+			console.log("Connected to mongodb:oaf");
+		}
+		});
+	}
 	var ObjectID = db.bson_serializer.ObjectID;
 	db.collection('task', function(err, collection) {
-		collection.remove({
-			_id: ObjectID(obj)
-		});
+      collection.remove( {_id:ObjectID(obj)});
 	});
 }
 
-<<<<<<< HEAD
-=======
 exports.reOrder = function(list) {
 	if (!db) {
 		db.open(function(err, db) {
@@ -153,43 +155,49 @@ exports.reOrder = function(list) {
 	}
 
 
->>>>>>> sqve
 exports.addSeq = function(seq) {
-	OpenDatabase();
-	db.collection('sequence', function(err, collection) {
-		collection.insert(seq, {
-			safe: true
-		}, function(err, result) {
-			if (err) console.log('error saving seq');
+	if (!db) {
+		db.open(function(err, db) {
+		if(!err) {
+			console.log("Connected to mongodb:oaf");
+		}
 		});
+	}
+	db.collection('sequence', function(err, collection) {
+      collection.insert(seq, {safe:true}, function(err, result) {
+		if(err)
+			console.log('error saving seq');
+      });
 	});
 }
-exports.getSeq = function(id, callback) {
-	OpenDatabase();
-	db.collection('sequence', function(err, collection) {
-		var ObjectID = db.bson_serializer.ObjectID;
-		collection.find({
-			_id: ObjectID(id)
-		}).toArray(function(err, result) {
-			if (err) callback(err)
-			else {
-				callback(null, JSON.stringify(result));
-			}
+
+exports.getSeq = function(id,callback) {
+	if (!db) {
+		db.open(function(err, db) {
+		if(!err) {
+			console.log("Connected to mongodb:oaf");
+		}
 		});
+	}
+	db.collection('sequence', function(err, collection) {
+	var ObjectID = db.bson_serializer.ObjectID;
+     collection.find({_id:ObjectID(id)}).toArray( function(err, result) {
+		if (err)
+				callback(err)
+			else{
+				callback(null,JSON.stringify(result));
+			}
+      });
 	});
 }
 
 exports.getTaskJson = function(id, callback) {
-<<<<<<< HEAD
-	OpenDatabase();
-=======
 	if (!db) {
 		db.open(function(err, db) {
 			if (!err) console.log("Connected to mongodb:oaf");
 		});
 	}
 	console.log(id);
->>>>>>> sqve
 	db.collection('task', function(err, collection) {
 		var ObjectID = db.bson_serializer.ObjectID;
 		collection.find({
