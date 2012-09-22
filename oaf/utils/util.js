@@ -7,7 +7,7 @@ var roof = require('./roof.js');
 String.prototype.decodeRa=function(){ 
 //decode ra and dec
 	
-	var pattern = new RegExp("([0-9]*)[h \s]([0-9]*.?[0-9]*)[\s m ]?([0-9]*)s?");
+	var pattern = new RegExp("([\+\-]?[0-9]*)[h \s]([0-9]*[\.]?[0-9]*)[\s m ]?([0-9]*)s?");
 	var result = this.match(pattern);
 	
 	
@@ -27,7 +27,7 @@ String.prototype.decodeRa=function(){
 String.prototype.decodeDec=function(){ 
 //decode ra and dec
 	
-	var pattern = new RegExp("([\+\-]?[0-9]*)[\s d]([0-9]*)[\s m]?([0-9]*)s?");
+	var pattern = new RegExp("([\+\-]?[0-9]*)[\s d]([0-9]*[\.]?[0-9]*)[\s m]?([0-9]*)s?");
 	var result =this.match(pattern);
 	
 	if (!result )
@@ -58,7 +58,7 @@ exports.dms_to_deg = function( heq ) {
     angle += Math.abs(heq.dec.mn / 60);
 	angle +=Math.abs(heq.dec.s / 3600);
 	
-	if (heq.h < 0)
+	if (heq.dec.d  < 0)
 		angle = angle*-1.0;
 
 	return angle ;

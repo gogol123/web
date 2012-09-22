@@ -16,6 +16,7 @@ function OpenDatabase() {
 			if (!err) console.log("Connected to mongodb:oaf");
 		});
 	}
+<<<<<<< HEAD
 }
 
 
@@ -27,14 +28,35 @@ exports.getTaskList = function(id, callback) {
 		}).toArray(function(err, items) {
 			if (err) callback(err)
 			else callback(null, items);
+=======
+	var ObjectID = db.bson_serializer.ObjectID;
+	db.collection('task', function(err, collection) {	
+		collection.find({'sequence':id}).sort({Order:1}).toArray(function(err, items) {
+			if (err)
+				callback(err)
+			else{
+				callback(null,items);
+			}
+>>>>>>> sqve
 		})
 	})
 }
 
+<<<<<<< HEAD
 exports.getTaskListJson = function(id, callback) {
 	exports.getTask(id,function (err,items){
 	if (err) callback(err)
 	else callback(null, JSON.stringify(items));
+=======
+	db.collection('task', function(err, collection) {	
+		collection.find({'sequence':id}).sort({Order:1}).toArray(function(err, items) {
+			if (err)
+				callback(err)
+			else{
+				callback(null,JSON.stringify(items));
+			}
+		})
+>>>>>>> sqve
 	})
 }
 
@@ -52,12 +74,24 @@ exports.save = function(task) {
 	OpenDatabase();
 	db.collection('task', function(err, collection) {
 		if (task._id) {
+<<<<<<< HEAD
 			db.collection('task', function(err, collection) {
 				collection.remove({
 					_id: ObjectID(task._id)
 				});
+=======
+			var ObjectID = db.bson_serializer.ObjectID;
+
+			task._id = ObjectID(task._id);
+			console.log('update task'+task._id);
+			db.collection('task',  function(err, collection) {
+				collection.update({
+					'_id': task._id
+				},task,{upsert:true, safe:true},function (err){if (err) console.log(err);});
+>>>>>>> sqve
 			});
 		}
+		else
 		collection.insert(task, {
 			safe: true
 		}, function(err, result) {
@@ -88,6 +122,38 @@ exports.removeTask = function(obj, callback) {
 	});
 }
 
+<<<<<<< HEAD
+=======
+exports.reOrder = function(list) {
+	if (!db) {
+		db.open(function(err, db) {
+			if (!err) console.log("Connected to mongodb:oaf");
+		});
+	}
+	db.collection('task', function(err, collection) {
+		var ObjectID = db.bson_serializer.ObjectID;
+		console.log(list.length);
+		for (i = 0; i < list.length; i++) {
+			console.log(list[i]);
+			id = ObjectID(list[i]);
+			db.collection('task', function(err, collection) {
+				collection.update({
+					'_id': id
+				}, {
+					'$set': {
+						'Order': i + 1}
+				}, {
+					safe: true
+				}, function(err) {
+					if (err) console.log(err);
+				});
+			});
+		}
+	});
+	}
+
+
+>>>>>>> sqve
 exports.addSeq = function(seq) {
 	OpenDatabase();
 	db.collection('sequence', function(err, collection) {
@@ -114,7 +180,16 @@ exports.getSeq = function(id, callback) {
 }
 
 exports.getTaskJson = function(id, callback) {
+<<<<<<< HEAD
 	OpenDatabase();
+=======
+	if (!db) {
+		db.open(function(err, db) {
+			if (!err) console.log("Connected to mongodb:oaf");
+		});
+	}
+	console.log(id);
+>>>>>>> sqve
 	db.collection('task', function(err, collection) {
 		var ObjectID = db.bson_serializer.ObjectID;
 		collection.find({
@@ -123,6 +198,7 @@ exports.getTaskJson = function(id, callback) {
 			if (err) callback(err)
 			else {
 				callback(null, JSON.stringify(result));
+				console.log('getTaskJson : '+JSON.stringify(result));
 			}
 		});
 	});

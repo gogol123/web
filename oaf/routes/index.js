@@ -6,8 +6,8 @@ var exec = require('child_process').exec
 var roof = require('../utils/roof.js');
 var telescope = require('../utils/tpl2.js');
 var Location = require("../utils/maximjs").Location;
-//var ccd = require('../utils/ccd.js');
-var ccd;
+var ccd = require('../utils/ccd.js');
+//var ccd;
 var task = require ('../task.js');
 
 var ToitStatus;
@@ -33,32 +33,25 @@ var Osenbach = new Location(47.9926716666666735,7.2065583333333336);
 
 var CounterMeteo=0;
 function WatchMeteo(err,result){
-		if (err)
-			console.log("Error occur");
+		if (err) {
+			now = new Date();
+			console.log(now.getHours()+":"+now.getMinutes()+":"+now.getSeconds()+ "  Error getting meteo status");
+			console.log(err);
+		}
 		else {
 			MeteoStatus = result;
 			MeteoStatus.seuil = MeteoSeuil;
 			if ( (result.SkyTemp > 1.0) || (result.Rain > 2100)){
-				console.log ("condition pour femeture meteo:"+CounterMeteo);
+				//console.log ("condition pour femeture meteo:"+CounterMeteo);
 				CounterMeteo++;
 			}
 			else
 				CounterMeteo=0;
 		}
 };
-var MeteoTaskId = setInterval(roof.getMeteo,10000,WatchMeteo);
+//var MeteoTaskId = setInterval(roof.getMeteo,10000,WatchMeteo);
 
-function Deg2hms(angle,ss) {
-	var str="";
-	tmpAngle = Math.abs(angle);
-	h = Math.floor(tmpAngle);
-	mn = (tmpAngle -h) *60;
-	s = (mn - Math.floor(mn)) *60;
-	if (angle < 0.0)
-		str = "-";
-	str += h+ss+Math.floor(mn)+"\""+Math.floor(s)+"'";
-	return str;
-	}
+
 
 setInterval(roof.getJson,2000,function(err,result){
 	if (err){
@@ -88,6 +81,18 @@ setInterval(telescope.getNTMStatus,1000,function(err,result){
 		}
 	}
 	});
+
+function Deg2hms(angle,ss) {
+	var str="";
+	tmpAngle = Math.abs(angle);
+	h = Math.floor(tmpAngle);
+	mn = (tmpAngle -h) *60;
+	s = (mn - Math.floor(mn)) *60;
+	if (angle < 0.0)
+		str = "-";
+	str += h+ss+Math.floor(mn)+"\""+Math.floor(s)+"'";
+	return str;
+	}
 
 /*
  * GET home page.
@@ -205,7 +210,7 @@ exports.actionMount = function(req, res){
 						telescope.powerOn(function (err){
 								if (err) {
 									console.log (err);
-									res.write(err);
+									res.write(err.message);
 									res.end();
 								}
 							 });
@@ -295,8 +300,9 @@ exports.actionAddTask = function(req, res){
 	t.Owner= req.user.username;
 	t.Action = req.body.action;
 	t.sequence = req.body.SeqObjectId;
-	t._id = req.body.objectId;
-	console.log(t);
+	t.Order = req.body.indice;
+	if(req.body.objectId)
+		t._id = req.body.objectId;
 
 	if (req.body.action == 'Slew' || req.body.action == 'Slew and Expose' ){
 		Target.Name = req.body.name;
@@ -341,6 +347,7 @@ exports.actionAddTask = function(req, res){
 	task.save(t)
 
 	console.log('add task');
+	console.log(t);
 	req.session = null; 
     res.redirect('/task');
     res.end();
@@ -418,6 +425,11 @@ exports.actionStartSequence = function(req, res) {
 	});
 }
 
+exports.actionReorder = function(req, res) {
+	task.reOrder(JSON.parse(req.body.id));
+	req.session = null;
+	res.end();
+}
 
 function ProcessTask(item,callback){
 	switch (item.Action) {

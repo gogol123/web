@@ -123,7 +123,7 @@ exports.Open = function(action, callback) {
 		else {
 			if (result != "Toit ouvert") {
 				HandelRoof(action);
-				setTimeout(isRoofOpen, 80000, callback);
+				setTimeout(isRoofOpen, 60000, callback);
 			} else
 			 callback(null, "Roof Open");
 			
@@ -148,7 +148,7 @@ exports.Close = function(callback) {
 		else {
 			if (result != 'Toit ferme') {
 				HandelRoof("Fermeture");
-				setTimeout(isRoofClosed, 80000, callback);
+				setTimeout(isRoofClosed, 60000, callback);
 			} else 
 				callback(null, "Roof close");
 			
@@ -168,10 +168,9 @@ exports.getMeteo = function(callback) {
 		host: '192.168.200.178',
 		path: '/jsonSensor',
 	};
-
 	getUrl(options, function(err, result) {
 		if (err) callback(err);
-		else callback(null, JSON.parse(result));
+		else  callback(null, JSON.parse(result).cloudsensor);
 	})
 }
 

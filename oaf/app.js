@@ -86,6 +86,7 @@ app.post('/action/addtask',ensureAuthenticated,routes.actionAddTask)
 app.post('/action/searchObject',ensureAuthenticated,routes.actionsearchObject)
 app.post('/action/deleteTask',ensureAuthenticated,routes.actiondeleteTask)
 app.post('/action/addSeq',ensureAuthenticated,routes.actionAddSeq)
+app.post('/action/reorder',ensureAuthenticated,routes.actionReorder)
 
 app.post('/action/startSequence',ensureAuthenticated,routes.actionStartSequence)
 
@@ -169,4 +170,3 @@ passport.use(new LocalStrategy(
 var io = sio.listen(server,options);
 io.set('log level', 0);
 routes.setIo(io);
-

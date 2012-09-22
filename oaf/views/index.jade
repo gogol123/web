@@ -62,18 +62,26 @@ block content
          h4 Error
          p#ErrorText
      p Welcome  #{user.username}
-     //- a(href='/toit') Toit
-     //-  br
-     //- a(href='/mount') Monture
-     //-  br
-     //- a(href='/meteo') Meteo
-     //-  br
-     //- a(href='/task') Taches
-     //-  br
-     //- a(href='/logout') Logout
-     //-   br 
+     legend Summary
+     .span6
+        .row
+              label.span2 Toit
+              span#status.span4.uneditable-input
+        .row 
+              label.span2 Telescope
+              span#status.span4.uneditable-input
+     legend Control
+     .span6
+        .row
+           label.span3 Automatique meridian flip
+           .controls
+             input.span1(type='checkbox')
+        .row
+           label.span3 Fermeture toit Automatique
+           .controls
+             input.span1(type='checkbox')
      legend Execute
-     .row
+     .span6
        table#ExecuteList.table.table-striped.table-bordered
           thead
            tr

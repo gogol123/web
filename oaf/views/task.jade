@@ -5,8 +5,9 @@ block script
 
   script
     var currentRow,currentRowSeq ;
+    var editMode = false;
 
-        var i;
+    var i;
 
     function displayTaskList() {
       $('#taskbody').empty();
@@ -47,7 +48,15 @@ block script
                     })
                  .appendTo('#taskbody');
           });
-      $('#example').tableDnD();
+      $('#example').tableDnD({
+        onDrop: function(table, row) {
+            var order = new Array();
+            for (i = 0 ; i < table.tBodies[0].rows.length; i++)
+              order[i]=table.tBodies[0].rows[i].id;
+            console.log(order);
+            $.post('/action/reorder',{id:JSON.stringify(order)},function() {})
+        }
+        });
       });
     }
 
@@ -63,7 +72,6 @@ block script
                   currentRowSeq = tr;
                   displayTaskList();
                  }
-
                  tr.bind('click', function(event) {
                       if (currentRowSeq)
                           currentRowSeq.removeClass('info');
@@ -98,14 +106,18 @@ block script
       }
 
       $('#Add').click(function() {  
+        editMode = false;
         $('#modal-add').modal({show:true});
       })     
        $('#Edit').click(function() {  
         //Update dialogue
+
+        console.log(currentRow.attr('id'))
         if (currentRow){
         $.getJSON('/json/task',{id:currentRow.attr('id')},function(data){
           $.each(data, function(key, val) {
             console.log(val);
+            editMode = true;
              $('#Action' ).val(val.Action);
              if (val.Action == 'Slew' || val.Action == 'Slew and Expose'){
                   $('#object').show();
@@ -145,7 +157,9 @@ block script
       $('#modal-save').click(function(){
        $('<input />').attr('type','hidden').attr('name','SeqObjectId').attr('value',currentRowSeq.attr('id'))
                      .appendTo('#formAdd');
-        if (currentRow)
+       $('<input />').attr('type','hidden').attr('name','indice').attr('value',i)
+                     .appendTo('#formAdd');
+        if (editMode && currentRow)
             $('<input />').attr('type','hidden').attr('name','objectId').attr('value',currentRow.attr('id'))
                      .appendTo('#formAdd');
        $('#formAdd').submit();

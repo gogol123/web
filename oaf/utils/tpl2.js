@@ -84,7 +84,7 @@ exports.powerOff = function(callback){
 
 function parkCallback() {
 	function isPark(err, result) {
-		if (err && !setCallback) setCallback(err);
+		if (err && setCallback) setCallback(err);
 		else if ((result.CurrHA > (ParkPosition.ha - 1.0)) && 
 				 (result.CurrHA < (ParkPosition.ha + 1.0)) &&
 				 (result.CurrDec > (ParkPosition.dec - 1.0)) && 
@@ -108,9 +108,20 @@ exports.park = function(callback){
 
 
 function isTrack(err,result) {	
-		setCallback(null);
-		console.log("slew completed");
+	if (err){
+		if (setCallack)
+				setCallback(err)
 	}
+	else
+		if ( (TelescopStatus.HAMotionstate  & 8 ) && (TelescopStatus.DecMotionstate  & 8 ) ){
+				clearInterval(isTrackId);
+				util.wait(2000,function() {
+					setCallback(null);
+					exports.startTrack();
+					console.log("slew completed");
+				})
+	}
+}
 	
 
 
@@ -118,30 +129,35 @@ exports.slew = function(ra,dec,location,callback) {
 
 	//decode ra and dec
 	try {
+
 		var R = ra.decodeRa();
 		var D = dec.decodeDec();
 		
-		var hz = location.EqtoHz(util.hms_to_deg(R),util.dms_to_deg(D));
+		exports.stopTrack();
+		util.wait(1000,function () {
+			var hz = location.EqtoHz(util.hms_to_deg(R),util.dms_to_deg(D));
 
-		if (hz.alt < 5.0) 
-			callback (new Error("Error occur in slewing telescope : object is below (deg!"));
-		r=util.hms_to_hdec(R);
-		d=util.dms_to_deg(D)
-		console.log("Slewing to :"+r+" : "+d);
-	
-		ntmAnwser = "";
+			if (hz.alt < 5.0) 
+				callback (new Error("Error occur in slewing telescope : object is below horizon (deg!"));
+			r=util.hms_to_hdec(R);
+			d=util.dms_to_deg(D)
+			console.log("Slewing to :"+r+" : "+d);
+		
+			ntmAnwser = "";
 
-		ntm.write("400 SET POINTING.TARGET.RA="+r.toString()+"\n");
-		ntm.write("400 SET POINTING.TARGET.DEC="+d.toString()+"\n");
-		ntm.write("400 SET POINTING.TARGET.RA_V=0.0\n");
-		ntm.write("400 SET POINTING.TARGET.DEC_V=0.0\n");
-		ntm.write("400 SET POINTING.TRACK=386\n");
+			ntm.write("400 SET POINTING.TARGET.RA="+r.toString()+"\n");
+			ntm.write("400 SET POINTING.TARGET.DEC="+d.toString()+"\n");
+			ntm.write("400 SET POINTING.TARGET.RA_V=0.0\n");
+			ntm.write("400 SET POINTING.TARGET.DEC_V=0.0\n");
+			ntm.write("400 SET POINTING.TRACK=386\n");
+			console.log('slew commande sent');
 
-		setTimeout(exports.getNTMStatus,30000,isTrack);
-		setCallback= callback;
+			isTrackId = setInterval(exports.getNTMStatus, 1000, isTrack);
+			setCallback= callback;
+		});
 	}
 	catch(err){
-		callback("slew"+err.toString());
+		callback(new Error("slew"+err.toString()));
 	}
 }
 
@@ -172,51 +188,45 @@ exports.getNTMStatus = function (callback) {
 
 }
 
-exports.NTMConnect = function () {
+exports.NTMConnect = function() {
 
- ntm = net.connect(65432,'192.168.200.195', function(){
-   ntm.on('data', function(data) {
-   ntmAnwser+=data.toString();
-	if (data.toString().search(CmdCompletePattern) !=-1){
-	//	console.log(ntmAnwser);
-	 TelescopStatus.CurrHA   = parseFloat(ntmAnwser.match(HAPattern)[1]);
-	 TelescopStatus.CurrDec  = parseFloat(ntmAnwser.match(DECPattern)[1]);
-	 power = ntmAnwser.match(PowerStatePattern)[1];
-	 if (power)
-		TelescopStatus.Power= parseFloat(ntmAnwser.match(PowerStatePattern)[1]);
-	 TelescopStatus.Referenced= parseFloat(ntmAnwser.match(ReferendedPattern)[1]);
-	 TelescopStatus.Globalstatus= parseFloat(ntmAnwser.match(GlobalStatusPattern)[1]);
-	 TelescopStatus.Track= parseInt(ntmAnwser.match(TrackPattern)[1]);
-	 TelescopStatus.HAMotionstate= parseInt(ntmAnwser.match(HAMotionPattern)[1]);
-	 TelescopStatus.DecMotionstate= parseInt(ntmAnwser.match(DECMotionPattern)[1]);
-	 TelescopStatus.PointingTargetRA= parseFloat(ntmAnwser.match(PointingTargetRAPattern)[1]);
-	 TelescopStatus.PointingTargetDec= parseFloat(ntmAnwser.match(PointingTargetDecPattern)[1]);
-	 if (StatusCallback)
-		StatusCallback(null,TelescopStatus);
-	 ntmAnwser = "";
-	 }
-	 if (data.toString().search(CmdSetCompletePattern) !=-1) 
-		if (setCallback)
-			setCallback(null);
-	 if (data.toString().search(CmdPowerOnPattern) !=-1) 
-		powerOnCallback();
-	if (data.toString().search(CmdParkPattern) !=-1) 
-		parkCallback();
-	
-		
-		
-   });
+	ntm = net.connect(65432, '192.168.200.195', function() {
+		ntm.on('data', function(data) {
+			ntmAnwser += data.toString();
+			if (data.toString().search(CmdCompletePattern) != -1) {
+				//	console.log(ntmAnwser);
+				TelescopStatus.CurrHA = parseFloat(ntmAnwser.match(HAPattern)[1]);
+				TelescopStatus.CurrDec = parseFloat(ntmAnwser.match(DECPattern)[1]);
+				power = ntmAnwser.match(PowerStatePattern)[1];
+				if (power) TelescopStatus.Power = parseFloat(ntmAnwser.match(PowerStatePattern)[1]);
+				TelescopStatus.Referenced = parseFloat(ntmAnwser.match(ReferendedPattern)[1]);
+				TelescopStatus.Globalstatus = parseFloat(ntmAnwser.match(GlobalStatusPattern)[1]);
+				TelescopStatus.Track = parseInt(ntmAnwser.match(TrackPattern)[1]);
+				TelescopStatus.HAMotionstate = parseInt(ntmAnwser.match(HAMotionPattern)[1]);
+				TelescopStatus.DecMotionstate = parseInt(ntmAnwser.match(DECMotionPattern)[1]);
+				TelescopStatus.PointingTargetRA = parseFloat(ntmAnwser.match(PointingTargetRAPattern)[1]);
+				TelescopStatus.PointingTargetDec = parseFloat(ntmAnwser.match(PointingTargetDecPattern)[1]);
+				if (StatusCallback) StatusCallback(null, TelescopStatus);
+				ntmAnwser = "";
+			}
+			if (data.toString().search(CmdSetCompletePattern) != -1) if (setCallback) setCallback(null);
+			if (data.toString().search(CmdPowerOnPattern) != -1) powerOnCallback();
+			if (data.toString().search(CmdParkPattern) != -1) parkCallback();
+			if (data.toString().search(CmdSlewPattern) != -1){console.log('slew cmd executed');}
 
-   ntm.on('error', function(err) {
-     console.log('error:', err.message);
-	 
-   });
 
-  ntm.write('01 SET SERVER.CONNECTION.EVENTMASK=0\n');
-});
+
+		});
+
+		ntm.on('error', function(err) {
+			console.log('error:', err.message);
+
+		});
+
+		ntm.write('01 SET SERVER.CONNECTION.EVENTMASK=0\n');
+	});
 }
 exports.NTMDisconnect = function() {
 	ntm.end('DISCONNECT');
 }
-
 

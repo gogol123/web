@@ -36,8 +36,10 @@ function repeater(i,callback) {
 			}
 		});
 	}
-	else
+	else {
+		console.log('image done');
 		callback(null,"Image:"+"done");
+	}
 }
 repeater(0,callback);
 }
