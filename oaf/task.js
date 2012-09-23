@@ -8,6 +8,7 @@ var Db = mongo.Db;
 var server = new Server('localhost', 27017, {auto_reconnect: true});
 var db = new Db('oaf', server);
 
+var ObjectID = db.bson_serializer.ObjectID;
 
 
 function OpenDatabase() {
@@ -16,7 +17,6 @@ function OpenDatabase() {
 			if (!err) console.log("Connected to mongodb:oaf");
 		});
 	}
-	var ObjectID = db.bson_serializer.ObjectID;
 }
 
 exports.getTaskList = function(id, callback) {
@@ -36,9 +36,9 @@ exports.getTaskList = function(id, callback) {
 }	
 
 exports.getTaskListJson = function(id, callback) {
-	export.getTaskList(id, function(err, result) {
+	exports.getTaskList(id, function(err, result) {
 		if (err) callback(err)
-		else callback(null, JSON.stringify(items));
+		else callback(null, JSON.stringify(result));
 	});
 }
 

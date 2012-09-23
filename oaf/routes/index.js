@@ -63,7 +63,7 @@ function WatchMeteo(err,result){
 				CounterMeteo=0;
 		}
 };
-//var MeteoTaskId = setInterval(roof.getMeteo,10000,WatchMeteo);
+var MeteoTaskId = setInterval(roof.getMeteo,10000,WatchMeteo);
 
 
 
@@ -73,8 +73,8 @@ setInterval(roof.getJson, 2000, function(err, result) {
 		console.log(now.getHours() + ":" + now.getMinutes() + ":" + now.getSeconds() + "  Error getting roof status");
 		console.log(err);
 	} else {
-		ToitSatus = result;
-		ToitSatus.TextStatus = statusTable[result.CurrentState];
+		ToitSatus = JSON.parse( result);
+		ToitSatus.TextStatus = statusTable[ToitSatus.CurrentState];
 	}
 });
 	
@@ -158,7 +158,7 @@ exports.task = function(req, res){
 exports.jsonRoof = function(req, res){
 
 	res.writeHead(200, {'content-type': 'text/json' });
-	res.write( ToitSatus);
+	res.write(JSON.stringify( ToitSatus));
 	res.end('\n');
 
 };
@@ -219,7 +219,13 @@ exports.jsonTask = function(req, res) {
 exports.actionMount = function(req, res){
 
 	switch  (req.body.action) {
-		case "Home" : 	telescope.park(callback);
+		case "Home" : 	telescope.park(function (err){
+								if (err) {
+									console.log (err);
+									res.write(err.message);
+									res.end();
+								}
+							 });
 						break;
 		case "On"	: 	
 						telescope.powerOn(function (err){
@@ -247,18 +253,18 @@ exports.actionMount = function(req, res){
 						console.log(null,"par & power off ok");
 						});
 						break;
-		case "Clear":telescope.clearError(callback);
+		case "Clear":telescope.clearError();
 						break ;
 		case "StartTrack":
 						if (MountStatus.Track == 0)
-							telescope.startTrack(callback);
+							telescope.startTrack();
 						else
-							telescope.stopTrack(callback);
+							telescope.stopTrack();
 
 						break ;
 		default		:	
 		
-						console.log("unkown action");
+						console.log("action mount :unkown action "+req.body.action);
 		}
 
 };
@@ -270,6 +276,7 @@ exports.actionRoof = function(req, res){
 			console.log(err);
 	}
 	switch  (req.body.action) {
+		case "ouvertureA" : 
 		case "ouvertureT" : 
 		case "ouvertureP"  : roof.Open(req.body.action,callback);
 						     break;
@@ -279,7 +286,7 @@ exports.actionRoof = function(req, res){
 								break;
 
 		default		:	
-						console.log("unkown action");
+						console.log("action roof unkown action "+req.body.action);
 		}
 
 };
@@ -403,7 +410,12 @@ exports.actionAddSeq = function(req, res){
 	req.session = null; 
 	res.redirect('/task');
 
+}
 
+exports.actionReorder = function(req, res) {
+	task.reOrder(JSON.parse(req.body.id));
+	req.session = null;
+	res.end();
 }
 
 var io;
@@ -440,11 +452,6 @@ exports.actionStartSequence = function(req, res) {
 	});
 }
 
-exports.actionReorder = function(req, res) {
-	task.reOrder(JSON.parse(req.body.id));
-	req.session = null;
-	res.end();
-}
 
 function ProcessTask(item,callback){
 	switch (item.Action) {
@@ -531,7 +538,7 @@ function EmitUpdate(text){
 }
 
 function CriticalError(err) {
-	console.log("Critical Error occur :"+err.message);
+	console.log("Critical Error occur :"+err);
 	child = exec('"C:/Program Files (x86)/Skype/Phone/skype.exe" /callto:"'+'philippelang');
 }
 //websocket

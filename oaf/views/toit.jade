@@ -10,6 +10,9 @@ block script
     #statusLabel { width:160px; font-weight:bold}
 
   script
+
+
+    var idOuverture ;
     $(document).ready(function() {
       $('button').button();
       $('#ErrorMessage').hide();
@@ -30,13 +33,17 @@ block script
       $('#FermetureTympan').position({my:'left',at :'left ',offset:'60 0',of :'#moteur'});
       $('#OuvertureToit').position({my:'right',at :'right ',offset:'-60 0',of :'#moteur'});
       $('#FermetureToit').position({my:'right',at :'right ',of :'#moteur'});
-      $('button' ).click(function() {	
+      $('#ouvertureA,#ouvertureP,#ouvertureT').click(function() {
+          idOuverture = $(this).attr('id'); 
+          $('#ErrorText').text('Ouverture du toit etes vous sur ?');
+          $('#ErrorMessage').show();
+         });
+      $('#fermeture, #stop').click(function() { 
          var id = $(this).attr('id'); 
-         // if (id == 'ouvertureA' || id == 'ouvertureP' || id == 'ouvertureT') {
-         //      $('#ErrorText').text('Ouverture du toit etes vous sur ?');
-         //      $('#ErrorMessage').show();
-         //  }
-              $.post('/action/roof', { action: id } );
+           $.post('/action/roof', { action: id } );
+         });
+      $('#oui').click(function() {	
+           $.post('/action/roof', { action: idOuverture } );
          });
       });
     function updateSchema(){
@@ -62,11 +69,13 @@ block script
 
 
 block content
-  #ErrorMessage.alert-block.alert
+  .row
+    .span8.offset1
+      #ErrorMessage.alert-block.alert
          button#AlertClose.close x
          h4 Warning
          p#ErrorText
-         .row.span3
+         p
            button#oui.btn.btn-small Oui 
            button#non.btn.btn-small Non
   legend Toit status
@@ -80,7 +89,7 @@ block content
       #Telescope.capteur
       #ToitLabel.textClass Toit
       #TympanLabel.textClass Tympan
-      #TelescopeLabel.textClass Teléscope
+      #TelescopeLabel.textClass Telescope
       #statusLabel.textClass status
     b Etat Moteurs
     #moteur
@@ -90,15 +99,15 @@ block content
       #FermetureToit.etatMoteur F
     br
     .row
-      label.span1 Ouverture:
+      label.span2 Ouverture:
       .btn-group
         button#ouvertureA.btn.btn-small.span1  Aeration
         button#ouvertureP.btn.btn-small.span1  Partielle
         button#ouvertureT.btn.btn-small.span1  Total
     .row
-      label.span1 Fermeture
+      label.span2 Fermeture
       button#fermeture.btn.btn-small.span1 Fermeture
     .row
-      label.span1 Arret
+      label.span2 Arret
       button#stop.btn.btn-small.btn-danger.span1 Stop!
   legend Toit Log

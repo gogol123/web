@@ -112,7 +112,6 @@ exports.Open = function(action, callback) {
 				callback(new Error("Error occur in opening roof : ROOF IS NOT OPEN!"));
 			} else {
 				callback(null, "Roof Open");
-				console.log("Roof Open");
 			}
 
 		});
@@ -138,7 +137,6 @@ exports.Close = function(callback) {
 			else if (result != 'Toit ferme') {
 				callback(new Error("Error occur in closing roof : ROOF IS NOT CLOSED!"));
 			} else{
-				console.log("Roof close");
 			 callback(null, "Roof close");
 			}
 		});

@@ -4,7 +4,8 @@ block script
 
   script(src="/socket.io/socket.io.js")
   script(src='/javascripts/updatestatus.js')
-
+  style
+     #toitStatus,#telStatus { text-align:center; }
   script
 
     var socket = io.connect('https://oaf.no-ip.info');
@@ -34,7 +35,6 @@ block script
           $('#ErrorMessage').hide();
         })
 
-
         $('#ExecuteList').empty();
         $.getJSON('/json/actionlist',{id:'#{seqid}'} ,function(data){
           $.each(data, function(key, val) {
@@ -57,17 +57,23 @@ block script
     });
 
     function updateSchema() {
-    $.getJSON('/json/mount', function(data) {
-      UpdateTelescopeStatus(data, $('#telStatus'));
-    });
-    $.getJSON('/json/roof', function(data) {
-      $('#toitStatus').text = data.TextStatus;
-      $('#toitStatus').css('background-color', 'red')
-      if (data.TextStatus == 'Toit ferme') $('#toitStatus').css('background-color', 'white');
-      if (data.TextStatus == 'Toit ouvert') $('#toitStatus').css('background-color', 'green');
-    });
-  }
-
+      $.getJSON('/json/mount', function(data) {
+        UpdateTelescopeStatus(data, $('#telStatus'));
+      });
+      $.getJSON('/json/roof', function(data) {
+        $('#toitStatus').text ( data.TextStatus);
+        $('#toitStatus').css('background-color', 'red')
+        $('#toitStatus').css('color', 'white')
+        if (data.TextStatus == 'Toit ferme') {
+          $('#toitStatus').css('color', 'black');
+          $('#toitStatus').css('background-color', 'white');
+        }
+        if (data.TextStatus == 'Toit ouvert' || data.TextStatus == 'Toit aeration' ) {
+          $('#toitStatus').css('background-color', 'green');
+        }
+      });
+    }
+    setInterval('updateSchema();', 2000);
 block content
   .row
     .span8.offset1
@@ -79,11 +85,14 @@ block content
      legend Summary
      .span6
         .row
+              label.span2 Meteo
+              span#meteoStatus.span3.uneditable-input
+        .row
               label.span2 Toit
-              span#toitStatus.span4.uneditable-input
+              span#toitStatus.span3.uneditable-input
         .row 
               label.span2 Telescope
-              span#telStatus.span4.uneditable-input
+              span#telStatus.span3.uneditable-input
      legend Control
      .span6
         .row
@@ -96,6 +105,7 @@ block content
              input.span1(type='checkbox')
      legend Execute
      .span6
+      .row
        table#ExecuteList.table.table-striped.table-bordered
           thead
            tr
@@ -107,6 +117,6 @@ block content
           tbody#executebody
        button.btn.btn-warning#Start Start
      legend Console
-     .row(style='height:300px')
+     .row(style='height:200px;overflow: auto')
         p#log.span8
   

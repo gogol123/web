@@ -30,7 +30,7 @@ var PointingTargetDecPattern = new RegExp	("10 DATA INLINE POINTING.TARGET.DEC=(
 var ntmAnwser = "";
 var StatusCallback;
 var setCallback =null;
- 
+var slewCallback = null;
 
  var TelescopStatus = {
 	Power : 0,
@@ -46,7 +46,6 @@ var setCallback =null;
 
 };
 	
-
 function powerOnCallback() {
 	function isReferenced(err, result) {
 		if (err) setCallback(err);
@@ -54,7 +53,12 @@ function powerOnCallback() {
 			clearInterval(isRefId);
 			console.log("power on completed");
 			setCallback(null);
+		} else if (result.Globalstatus != 0.0) {
+			clearInterval(isRefId);
+			console.log("Error during power On ");
+			setCallback(new Error('Error during power On'));
 		}
+
 	}
 	isRefId = setInterval(exports.getNTMStatus, 2000, isReferenced);
 }
@@ -79,15 +83,18 @@ exports.powerOff = function(callback){
 }
 
 function parkCallback() {
-	function isPark(err, result) {
-		if (err && setCallback) setCallback(err);
-		else if ((result.CurrHA > (ParkPosition.ha - 1.0)) && (result.CurrHA < (ParkPosition.ha + 1.0)) && (result.CurrDec > (ParkPosition.dec - 1.0)) && (result.CurrDec < (ParkPosition.dec + 1.0))) {
+	function isPark() {
+
+		if ((TelescopStatus.CurrHA > (ParkPosition.ha - 1.0)) && 
+			(TelescopStatus.CurrHA < (ParkPosition.ha + 1.0)) && 
+			(TelescopStatus.CurrDec > (ParkPosition.dec - 1.0)) && 
+			(TelescopStatus.CurrDec < (ParkPosition.dec + 1.0))) {
 			clearInterval(isParkId);
 			console.log("park completed");
 			if (setCallback) setCallback(null);
 		}
 	}
-	isParkId = setInterval(exports.getNTMStatus, 2000, isPark);
+	isParkId = setInterval(isPark, 2000, isPark);
 }
 
 exports.park = function(callback) {
@@ -97,47 +104,39 @@ exports.park = function(callback) {
 }
 
 
-function isTracking(err, result) {
-	if (err) {
-		if (setCallack) setCallback(err)
-	} else if ((TelescopStatus.HAMotionstate & 8) && (TelescopStatus.DecMotionstate & 8)) {
+function isTracking() {
+	 if ((TelescopStatus.HAMotionstate & 8) && (TelescopStatus.DecMotionstate & 8)) {
 		clearInterval(isTrackId);
-		util.wait(2000, function() {
-			console.log("slew completed");
-			setCallback(null);
-			exports.startTrack();
-		})
+		console.log("slew completed");
+		slewCallback(null);
 	}
 }
 	
 
 exports.slew = function(ra, dec, location, callback) {
-	try {
 
+	try {
 		var R = ra.decodeRa();
 		var D = dec.decodeDec();
 
-		exports.stopTrack();
-		util.wait(1000, function() {
-			var hz = location.EqtoHz(util.hms_to_deg(R), util.dms_to_deg(D));
+		var hz = location.EqtoHz(util.hms_to_deg(R), util.dms_to_deg(D));
 
-			if (hz.alt < 5.0) callback(new Error("Error occur in slewing telescope : object is below horizon (deg!"));
-			r = util.hms_to_hdec(R);
-			d = util.dms_to_deg(D)
-			console.log("Slewing to :" + r + " : " + d);
+		if (hz.alt < 5.0) callback(new Error("Error occur in slewing telescope : object is below horizon (deg!"));
+		r = util.hms_to_hdec(R);
+		d = util.dms_to_deg(D)
+		console.log("Slewing to :" + r + " : " + d);
 
-			ntmAnwser = "";
-			ntm.write("400 SET POINTING.TARGET.RA=" + r.toString() + "\n");
-			ntm.write("400 SET POINTING.TARGET.DEC=" + d.toString() + "\n");
-			ntm.write("400 SET POINTING.TARGET.RA_V=0.0\n");
-			ntm.write("400 SET POINTING.TARGET.DEC_V=0.0\n");
-			console.log('slew commande sent');
-
-			isTrackId = setInterval(exports.getNTMStatus, 2000, isTracking);
-			setCallback = callback;
-		});
-	} catch (err)
-	callback(new Error("slew" + err.toString()));
+		ntmAnwser = "";
+		ntm.write("400 SET POINTING.TARGET.RA=" + r.toFixed(5) + "\r\n");
+		ntm.write("401 SET POINTING.TARGET.DEC=" + d.toFixed(5) + "\r\n");
+		ntm.write("402 SET POINTING.TARGET.RA_V=0.0\r\n");
+		ntm.write("403 SET POINTING.TARGET.DEC_V=0.0\r\n");
+		ntm.write("404 SET POINTING.TRACK=386\r\n");
+		isTrackId = setInterval(isTracking, 4000);
+		slewCallback = callback;
+	} catch (err) {
+		callback(new Error('Error during slewing' + err.message));
+	}
 }
 
 exports.startTrack = function() {

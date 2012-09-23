@@ -7,16 +7,16 @@ block script
     var currentRow,currentRowSeq ;
     var editMode = false;
 
-    var i;
+    var indice;
 
     function displayTaskList() {
       $('#taskbody').empty();
       $.getJSON('/json/actionlist',{id:currentRowSeq.attr('id')},function(data){
-      i = 1;
+      indice = 1;
       $.each(data, function(key, val) {
         var tr = $('<tr>').attr('id',val._id)
                  .append($('<td>').append($('<input>').attr('type','checkbox')))
-                 .append($('<td>').html(i++).attr('name','indice'))    
+                 .append($('<td>').html(indice++).attr('name','indice'))    
                  .append($('<td>').html(val.Action));
                   if (val.Target) {
                     tr.append($('<td>').html(val.Target.Name))
@@ -62,7 +62,10 @@ block script
 
 
     $(document).ready(function() {
-
+        $('#ErrorMessage').hide();
+        $('#AlertClose').click(function(){
+            $('#ErrorMessage').hide();
+          })
         $.getJSON('/json/sequencelist',function(data){
         $.each(data, function(key, val) {
             tr = $('<tr>').attr('id',val._id)
@@ -111,12 +114,9 @@ block script
       })     
        $('#Edit').click(function() {  
         //Update dialogue
-
-        console.log(currentRow.attr('id'))
         if (currentRow){
         $.getJSON('/json/task',{id:currentRow.attr('id')},function(data){
           $.each(data, function(key, val) {
-            console.log(val);
             editMode = true;
              $('#Action' ).val(val.Action);
              if (val.Action == 'Slew' || val.Action == 'Slew and Expose'){
@@ -157,7 +157,7 @@ block script
       $('#modal-save').click(function(){
        $('<input />').attr('type','hidden').attr('name','SeqObjectId').attr('value',currentRowSeq.attr('id'))
                      .appendTo('#formAdd');
-       $('<input />').attr('type','hidden').attr('name','indice').attr('value',i)
+       $('<input />').attr('type','hidden').attr('name','indice').attr('value',indice++)
                      .appendTo('#formAdd');
         if (editMode && currentRow)
             $('<input />').attr('type','hidden').attr('name','objectId').attr('value',currentRow.attr('id'))
@@ -217,8 +217,12 @@ block script
 
 block content
 
-   .alert#ErrorMessage 
-        p= message
+    .row
+     .span8.offset1
+       #ErrorMessage.alert-block.alert.alert-error
+         button#AlertClose.close x
+         h4 Error
+         p#ErrorText
     .row
       .span8.offset1
         legend  Sequence list
@@ -251,59 +255,59 @@ block content
              th DEC
              th Image
             tbody#taskbody
-   .modal#modal-add.hide.fade
-     .modal-header
-         button.close(data-dismiss="modal",aria-hidden="true")&times;
-         .h2 Add Task
-     .modal-body
-      form#formAdd.form-horizontal(method="post", action="/action/addtask")
-       .control-group
-         label.control-label Action 
-         .controls
-           select#Action(name = 'action')
-             option(value='Ouverture Toit') Ouverture Toit
-             option(value='Fermeture Toit') Fermeture Toit
-             option(value='Power on monture') Power on monture
-             option(value='Power off monture') Power off monture
-             option(value='Slew') Slew
-             option(value='Slew and Expose') Slew and Expose
-       #object
-        legend Object Info
-        .control-group
-         label.control-label Object Name 
-         .controls
-           .form-search
-              input#objectName(type="text",placeholder="Object name",name='name')
-              a.btn#search Search 
-        .control-group
-         label.control-label Link 
-         .controls
-           a#ln(target="_blank")
-        .control-group
-         label.control-label Coord 
-         .controls
-          .form-inline
-              label RA :
-              input.input-small.span1#rainput(type="text",placeholder="0h00mn0s",name='RA')  
-              label DEC : 
-              input.input-small.span1#Dec(type="text",placeholder="0d00mn0s",name='DEC')    
-       #ExposeOption
-        legend Exposure Info
-        #ExposeOptions.row.span6
-     .modal-footer
-       button.btn(data-dismiss="modal",aria-hidden="true") Close
-       a#modal-save.btn.btn-primary  Save
-   .modal#modal-addseq.hide.fade
-     .modal-header
-         button.close(data-dismiss="modal",aria-hidden="true")&times;
-         .h2 Add Sequence
-     .modal-body
-      form#formAddSeq.form-horizontal(method="post", action="/action/addSeq")
-       .control-group
-         label.control-label Sequence Name 
-         .controls
-              input#objectName(type="text",placeholder="Sequence name",name='seqname')
-     .modal-footer
-       button.btn(data-dismiss="modal",aria-hidden="true") Close
-       a#modal-saveseq.btn.btn-primary  Save
+       .modal#modal-add.hide.fade
+         .modal-header
+             button.close(data-dismiss="modal",aria-hidden="true")&times;
+             .h2 Add Task
+         .modal-body
+          form#formAdd.form-horizontal(method="post", action="/action/addtask")
+           .control-group
+             label.control-label Action 
+             .controls
+               select#Action(name = 'action')
+                 option(value='Ouverture Toit') Ouverture Toit
+                 option(value='Fermeture Toit') Fermeture Toit
+                 option(value='Power on monture') Power on monture
+                 option(value='Power off monture') Power off monture
+                 option(value='Slew') Slew
+                 option(value='Slew and Expose') Slew and Expose
+           #object
+            legend Object Info
+            .control-group
+             label.control-label Object Name 
+             .controls
+               .form-search
+                  input#objectName(type="text",placeholder="Object name",name='name')
+                  a.btn#search Search 
+            .control-group
+             label.control-label Link 
+             .controls
+               a#ln(target="_blank")
+            .control-group
+             label.control-label Coord 
+             .controls
+              .form-inline
+                  label RA :
+                  input.input-small.span1#rainput(type="text",placeholder="0h00mn0s",name='RA')  
+                  label DEC : 
+                  input.input-small.span1#Dec(type="text",placeholder="0d00mn0s",name='DEC')    
+           #ExposeOption
+            legend Exposure Info
+            #ExposeOptions.row.span6
+         .modal-footer
+           button.btn(data-dismiss="modal",aria-hidden="true") Close
+           a#modal-save.btn.btn-primary  Save
+       .modal#modal-addseq.hide.fade
+         .modal-header
+             button.close(data-dismiss="modal",aria-hidden="true")&times;
+             .h2 Add Sequence
+         .modal-body
+          form#formAddSeq.form-horizontal(method="post", action="/action/addSeq")
+           .control-group
+             label.control-label Sequence Name 
+             .controls
+                  input#objectName(type="text",placeholder="Sequence name",name='seqname')
+         .modal-footer
+           button.btn(data-dismiss="modal",aria-hidden="true") Close
+           a#modal-saveseq.btn.btn-primary  Save
 
