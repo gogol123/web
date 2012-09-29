@@ -49,18 +49,15 @@ var slewCallback = null;
 function powerOnCallback() {
 	function isReferenced(err, result) {
 		if (err) setCallback(err);
-		else if (result.Referenced == 1.0) {
-			clearInterval(isRefId);
+		else if (TelescopStatus.Referenced == 1.0) {
 			console.log("power on completed");
 			setCallback(null);
-		} else if (result.Globalstatus != 0.0) {
-			clearInterval(isRefId);
+		} else if (TelescopStatus.Globalstatus != 0.0) {
 			console.log("Error during power On ");
 			setCallback(new Error('Error during power On'));
-		}
-
+		} else setTimeout(exports.getNTMStatus, 2000, isReferenced);
 	}
-	isRefId = setInterval(exports.getNTMStatus, 2000, isReferenced);
+	 setTimeout(isReferenced, 2000);
 }
 
 
@@ -89,12 +86,12 @@ function parkCallback() {
 			(TelescopStatus.CurrHA < (ParkPosition.ha + 1.0)) && 
 			(TelescopStatus.CurrDec > (ParkPosition.dec - 1.0)) && 
 			(TelescopStatus.CurrDec < (ParkPosition.dec + 1.0))) {
-			clearInterval(isParkId);
 			console.log("park completed");
 			if (setCallback) setCallback(null);
 		}
+		else setTimeout(isPark, 2000);
 	}
-	isParkId = setInterval(isPark, 2000, isPark);
+	setTimeout(isPark, 2000);
 }
 
 exports.park = function(callback) {
@@ -103,16 +100,14 @@ exports.park = function(callback) {
 	setCallback = callback;
 }
 
-var isTrackId;
 
 function isTracking() {
 	 if ((TelescopStatus.HAMotionstate & 8) && (TelescopStatus.DecMotionstate & 8)) {
-		clearInterval(isTrackId);
-						console.log('clear isTrackId =');
-				console.log(isTrackId);
 		console.log("slew completed");
 		slewCallback(null);
 	}
+	else setTimeout(isTracking, 4000);
+
 }
 	
 exports.slew = function(ra, dec, location, callback) {
@@ -140,9 +135,7 @@ exports.slew = function(ra, dec, location, callback) {
 				ntm.write(";POINTING.TARGET.RA_V=0.0");
 				ntm.write(";POINTING.TARGET.DEC_V=0.0\r\n");
 				ntm.write("404 SET POINTING.TRACK=386\r\n");
-				isTrackId = setInterval(isTracking, 4000);
-				console.log('set isTrackId =');
-				console.log(isTrackId);
+				setTimeout(isTracking, 4000);
 				slewCallback = callback;
 			} else callback(new Error("Error in slewing telescope : roof not open"));
 		});
