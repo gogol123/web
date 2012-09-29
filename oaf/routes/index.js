@@ -6,13 +6,18 @@ var exec = require('child_process').exec
 var roof = require('../utils/roof.js');
 var telescope = require('../utils/tpl2.js');
 var Location = require("../utils/maximjs").Location;
+var _skype = require("../utils/maximjs").SkypeJS;
 var ccd = require('../utils/ccd.js');
-//var ccd;
+
 var task = require ('../task.js');
 
 var ToitStatus;
 var MountStatus;
 var MeteoStatus;
+
+
+var skype = new _skype();
+
 var MeteoSeuil = {
 	SkyTemp : 10.0,
 	SkyTempCheck : 'on',
@@ -27,6 +32,8 @@ var seqText = new Array();
 var seqIndex = 0
 var seqProgress = new Array();
 var seqProgressIndex = 0;
+
+
 
 var statusTable = [	'Toit ferme', 
 					'Tympan Ouverture intermedaire', 
@@ -55,13 +62,16 @@ function WatchMeteo(err,result){
 		else {
 			MeteoStatus = result;
 			MeteoStatus.seuil = MeteoSeuil;
-			if ( (result.SkyTemp > 1.0) || (result.Rain > 2100)){
-				//console.log ("condition pour femeture meteo:"+CounterMeteo);
-				CounterMeteo++;
-			}
-			else
-				CounterMeteo=0;
+			if  ((MeteoSeuil.SkyTempCheck && (result.SkyTemp > MeteoSeuil.SkyTemp)) ||
+				 (MeteoSeuil.ClarityCheck && ( (result.MLXAmb-result.SkyTemp) < MeteoSeuil.Clarity)) ||
+				 (MeteoSeuil.DHTHumCheck && ( result.DHTHum > MeteoSeuil.DHTHum)) ||
+				 (MeteoSeuil.DarknessCheck && ( result.Darkness > MeteoSeuil.Darkness)) ||
+				 (MeteoSeuil.DarknessCheck && ( result.Darkness > MeteoSeuil.Darkness)) ) {
+			CounterMeteo++;
+			console.log ("condition pour femeture meteo:"+CounterMeteo);
+
 		}
+	}
 };
 var MeteoTaskId = setInterval(roof.getMeteo,10000,WatchMeteo);
 
@@ -84,6 +94,7 @@ setInterval(telescope.getNTMStatus,1000,function(err,result){
 		console.log("Error getting telescope status");
 	else {
 		MountStatus=result;
+		
 		if (MountStatus.Track !=99 ) {
 			beforeNoon = new Date();
 			now = new Date();
@@ -93,6 +104,17 @@ setInterval(telescope.getNTMStatus,1000,function(err,result){
 			MountStatus.targetDec =Deg2hms( MountStatus.PointingTargetDec,"d");
 			delta = (MountStatus.transitTime.getTime()-now.getTime())/1000
 			MountStatus.timeRemaining = Math.floor(delta/3600)+"h"+(((delta/3600)-Math.floor(delta/3600))*60).toFixed(2);
+		}
+		if (isExposing && MountStatus.Track ==0) {
+			if (MountStatus.timeRemaining < 5) {
+				console.log('telescope stop during exposue : Mediran flip detected');
+				setTimeout(telescope.startTrack,300000);
+			}
+			else {
+			console.log('telescope stop tracking during Exposure');
+			telescope.startTrack();
+		}
+
 		}
 	}
 	});
@@ -421,7 +443,7 @@ exports.actionReorder = function(req, res) {
 var io;
 var socket;
 
-
+var isExposing = false;
 exports.actionStartSequence = function(req, res) {
 	res.redirect('/');
 	req.session = null;
@@ -432,13 +454,15 @@ exports.actionStartSequence = function(req, res) {
 			seqText = new Array();
 			seqProgress = new Array();
 			seqProgressIndex = 0;
-			async.forEachSeries(list, function(item, callback) {
+			ccd.Attach();
+			forEachSeries(list, function(item, callback) {
 				ProcessTask(item, callback);
 				socket.emit('ProgressSequence', {
 					id: item._id
 				});
 				seqProgress[seqProgressIndex++] = item._id;
 			}, function(err) {
+				ccd.Dettach();
 				if (err) {
 					CriticalError(err);
 					socket.emit('SequenceError', {
@@ -469,6 +493,7 @@ function ProcessTask(item,callback){
 										telescope.powerOn(callback);
 										break;
 			case  'Power off monture': 	
+										isExposing = false;
 								        EmitUpdate('monture power off');
 								        telescope.park(function(err) {
 								        	if (!err) telescope.powerOff(callback);
@@ -481,25 +506,30 @@ function ProcessTask(item,callback){
 										telescope.slew(item.Target.RA,item.Target.DEC,Osenbach,callback);
 										break;
 			case 'Slew and Expose':     // slew to target
-								        EmitUpdate('telescope slew: '+item.Target.RA+' '+item.Target.DEC);
-										telescope.slew(item.Target.RA,item.Target.DEC,Osenbach,function(err){
-										//Expose
-										EmitUpdate('start expose : ');
-										async.forEachSeries(item.ImageOption,function(image,callback2){
-												var options = {};
-												options.ObjectName = item.Target.Name;
-												options.index = image.Repeate;
-												options.Binning = decodeBinning(image.Bin);
-												options.Filter = decodeFilter(image.Filter);
-												options.expose = image.Exposure;
-												EmitUpdate('Expose filter'+image.Filter);
-												ccd.Expose(options,callback2,socket);
-												},
-												function(err){
-													callback(err)
-												});
-										});
-										break;
+										isExposing = true;
+								        EmitUpdate('telescope slew: ' + item.Target.RA + ' ' + item.Target.DEC);
+									      telescope.slew(item.Target.RA, item.Target.DEC, Osenbach, function(err) {
+									      	if (err) callback(err);
+									      	else {
+									      		//Expose
+									      		EmitUpdate('start expose : ');
+									      		forEachSeries(item.ImageOption, function(image, callback2) {
+									      			var options = {};
+									      			console.log(image);
+									      			options.ObjectName = item.Target.Name;
+									      			options.index = image.Repeate;
+									      			options.Binning = decodeBinning(image.Bin);
+									      			options.Filter = decodeFilter(image.Filter);
+									      			options.expose = image.Exposure;
+									      			EmitUpdate('Expose filter' + image.Filter);
+									      			ccd.Expose(options, callback2, socket);
+									      		}, function(err) {
+									      			callback(err)
+									      		});
+									      	}
+									      	});
+									      
+									      break;
 			default :
 										callback('Error ProcessTask :default case');
 	}
@@ -539,7 +569,10 @@ function EmitUpdate(text){
 
 function CriticalError(err) {
 	console.log("Critical Error occur :"+err);
-	child = exec('"C:/Program Files (x86)/Skype/Phone/skype.exe" /callto:"'+'philippelang');
+	skype.SendMessage('philippelang',"Error occur during sequence")
+	skype.SendMessage('philippelang',err.message);
+	//skype.VoiceCall('philippelang');
+	//child = exec('"C:/Program Files (x86)/Skype/Phone/skype.exe" /callto:"'+'philippelang');
 }
 //websocket
 
@@ -552,3 +585,25 @@ exports.setIo = function(i){
   });
 }
 
+//--------- 
+
+var stopSerie = false;
+
+   function forEachSeries(arr, iterator, callback) {
+ 	if (!arr.length) return callback();
+ 	var completed = 0;
+ 	var iterate = function() {
+ 			iterator(arr[completed], function(err) {
+ 				if (err) callback(err);
+ 				else {
+ 					completed += 1;
+ 					if (completed === arr.length) {
+ 						callback(null);
+ 					} else if (!stopSerie) iterate();
+ 					else callback(new Error('serie stop by user'));
+
+ 				}
+ 			});
+ 		};
+ 	iterate();
+ };

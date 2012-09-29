@@ -8,6 +8,7 @@ block script
      #toitStatus,#telStatus { text-align:center; }
   script
 
+    var SequenceInProgress = false;
     var socket = io.connect('https://oaf.no-ip.info');
       socket.on('UpdateSequence', function (data) {
         if (data.all) {
@@ -51,8 +52,23 @@ block script
             });
         });
         $('#Start').click(function(){
-            $('#log').empty();
-            $.post('/action/startSequence',{id:'#{seqid}'})
+           $('#log').empty();
+           if (SequenceInProgress){ 
+              $('#Start').text('Start');
+              $('#Start').removeClass('btn-danger');
+              $('#Start').addClass('btn-warning');
+              $.post('/action/stopSequence')
+              SequenceInProgress = false;
+            }
+            else {
+              $('#Start').text('stop');
+              $('#Start').removeClass('btn-warning');
+              $('#Start').addClass('btn-danger');
+              $.post('/action/stopSequence')
+              SequenceInProgress = true;
+              $.post('/action/startSequence',{id:'#{seqid}'})
+            }
+
           })
     });
 

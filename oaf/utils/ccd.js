@@ -8,6 +8,16 @@ var maximCCD = new MaximCCD();
 
 var defaultPath = "C:/Users/philippe/tmp";
 
+exports.Attach = function (){
+	maximCCD.Attach();
+}
+
+
+exports.Dettach = function (){
+	maximCCD.Dettach();
+}
+
+
 exports.Expose = function (options,callback,socket){
 	if (!options.ImagePath) {
 		today = new Date();

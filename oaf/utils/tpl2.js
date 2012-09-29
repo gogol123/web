@@ -103,42 +103,51 @@ exports.park = function(callback) {
 	setCallback = callback;
 }
 
+var isTrackId;
 
 function isTracking() {
 	 if ((TelescopStatus.HAMotionstate & 8) && (TelescopStatus.DecMotionstate & 8)) {
 		clearInterval(isTrackId);
+						console.log('clear isTrackId =');
+				console.log(isTrackId);
 		console.log("slew completed");
 		slewCallback(null);
 	}
 }
 	
-
 exports.slew = function(ra, dec, location, callback) {
 
 	try {
-		var R = ra.decodeRa();
-		var D = dec.decodeDec();
 
-		var hz = location.EqtoHz(util.hms_to_deg(R), util.dms_to_deg(D));
+		roof.getStatus(function(err, result) {
+			if (err) callback(err);
+			else if (result == "Toit ouvert") {
+				var R = ra.decodeRa();
+				var D = dec.decodeDec();
 
-		if (hz.alt < 5.0) callback(new Error("Error occur in slewing telescope : object is below horizon (deg!"));
-		r = util.hms_to_hdec(R);
-		d = util.dms_to_deg(D)
-		console.log("Slewing to :" + r + " : " + d);
+				var hz = location.EqtoHz(util.hms_to_deg(R), util.dms_to_deg(D));
 
-		ntmAnwser = "";
-		ntm.write("400 SET POINTING.TARGET.RA=" + r.toFixed(5) + "\r\n");
-		ntm.write("401 SET POINTING.TARGET.DEC=" + d.toFixed(5) + "\r\n");
-		ntm.write("402 SET POINTING.TARGET.RA_V=0.0\r\n");
-		ntm.write("403 SET POINTING.TARGET.DEC_V=0.0\r\n");
-		ntm.write("404 SET POINTING.TRACK=386\r\n");
-		isTrackId = setInterval(isTracking, 4000);
-		slewCallback = callback;
+				if (hz.alt < 5.0) callback(new Error("Error occur in slewing telescope : object is below horizon (deg!"));
+				r = util.hms_to_hdec(R);
+				d = util.dms_to_deg(D)
+				console.log("Slewing to :" + r + " : " + d);
+
+				ntmAnwser = "";
+				ntm.write("400 SET POINTING.TARGET.RA=" + r.toFixed(5));
+				ntm.write(";POINTING.TARGET.DEC=" + d.toFixed(5));
+				ntm.write(";POINTING.TARGET.RA_V=0.0");
+				ntm.write(";POINTING.TARGET.DEC_V=0.0\r\n");
+				ntm.write("404 SET POINTING.TRACK=386\r\n");
+				isTrackId = setInterval(isTracking, 4000);
+				console.log('set isTrackId =');
+				console.log(isTrackId);
+				slewCallback = callback;
+			} else callback(new Error("Error in slewing telescope : roof not open"));
+		});
 	} catch (err) {
 		callback(new Error('Error during slewing' + err.message));
 	}
 }
-
 exports.startTrack = function() {
 	ntmAnwser = "";
 	ntm.write("100 SET POINTING.TRACK=386\n");
