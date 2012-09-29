@@ -127,11 +127,13 @@ exports.slew = function(ra, dec, location, callback) {
 
 				var hz = location.EqtoHz(util.hms_to_deg(R), util.dms_to_deg(D));
 
-				if (hz.alt < 5.0) callback(new Error("Error occur in slewing telescope : object is below horizon (deg!"));
+				if (hz.alt < 5.0) {
+					callback(new Error("Error occur in slewing telescope : object is below horizon (deg!"));
+					return;
+				}
 				r = util.hms_to_hdec(R);
 				d = util.dms_to_deg(D)
 				console.log("Slewing to :" + r + " : " + d);
-
 				ntmAnwser = "";
 				ntm.write("400 SET POINTING.TARGET.RA=" + r.toFixed(5));
 				ntm.write(";POINTING.TARGET.DEC=" + d.toFixed(5));
