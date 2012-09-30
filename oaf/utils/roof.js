@@ -51,7 +51,10 @@ var statusTable = [
 	function repeater(i, callback) {
 		if (i < 7) {
 			getUrlInternal(function(err, result) {
-				if (err)  util.wait(1000,function(){repeater(i + 1, callback)});
+				if (err) {
+				console.log('error geting roof status : '+i);
+				 util.wait(1000,function(){repeater(i + 1, callback)});
+				 }
 			     else callback(null, result)
 			});
 		} else callback(new Error('error cannot connect to :' + options.host));

@@ -51,7 +51,7 @@ function powerOnCallback() {
 		if (err) setCallback(err);
 		else if (TelescopStatus.Referenced == 1.0) {
 			console.log("power on completed");
-			setCallback(null);
+			setTimeout(setCallback,5000,null);
 		} else if (TelescopStatus.Globalstatus != 0.0) {
 			console.log("Error during power On ");
 			setCallback(new Error('Error during power On'));

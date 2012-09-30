@@ -73,7 +73,7 @@ function WatchMeteo(err,result){
 		}
 	}
 };
-var MeteoTaskId = setInterval(roof.getMeteo,10000,WatchMeteo);
+//var MeteoTaskId = setInterval(roof.getMeteo,10000,WatchMeteo);
 
 
 
@@ -112,7 +112,7 @@ setInterval(telescope.getNTMStatus,1000,function(err,result){
 			}
 			else {
 			console.log('telescope stop tracking during Exposure');
-			telescope.startTrack();
+			//telescope.startTrack();
 		}
 
 		}
@@ -454,22 +454,32 @@ exports.actionStartSequence = function(req, res) {
 			seqText = new Array();
 			seqProgress = new Array();
 			seqProgressIndex = 0;
-			ccd.Attach();
-			forEachSeries(list, function(item, callback) {
-				ProcessTask(item, callback);
-				socket.emit('ProgressSequence', {
-					id: item._id
-				});
-				seqProgress[seqProgressIndex++] = item._id;
-			}, function(err) {
-				ccd.Dettach();
+			EmitUpdate('connect to MaximDL');
+			ccd.Attach(function(err) {
 				if (err) {
 					CriticalError(err);
 					socket.emit('SequenceError', {
 						msg: err.message
 					});
+
 				} else {
-					EmitUpdate('Sequence completed');
+					forEachSeries(list, function(item, callback) {
+						ProcessTask(item, callback);
+						socket.emit('ProgressSequence', {
+							id: item._id
+						});
+						seqProgress[seqProgressIndex++] = item._id;
+					}, function(err) {
+						ccd.Dettach();
+						if (err) {
+							CriticalError(err);
+							socket.emit('SequenceError', {
+								msg: err.message
+							});
+						} else {
+							EmitUpdate('Sequence completed');
+						}
+					});
 				}
 			});
 		}

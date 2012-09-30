@@ -8,8 +8,15 @@ var maximCCD = new MaximCCD();
 
 var defaultPath = "C:/Users/philippe/tmp";
 
-exports.Attach = function (){
-	maximCCD.Attach();
+exports.Attach = function(callback) {
+	callback = callback || function() {};
+	try {
+		maximCCD.Attach();
+		callback(null);
+	} catch (err) {
+		console.log('error during connect to MaximDl');
+		callback(new Error('error during connect to MaximDl' + err.message))
+	}
 }
 
 
