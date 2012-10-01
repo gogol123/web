@@ -73,7 +73,7 @@ function WatchMeteo(err,result){
 		}
 	}
 };
-//var MeteoTaskId = setInterval(roof.getMeteo,10000,WatchMeteo);
+var MeteoTaskId = setInterval(roof.getMeteo,10000,WatchMeteo);
 
 
 
@@ -89,6 +89,7 @@ setInterval(roof.getJson, 2000, function(err, result) {
 });
 	
 telescope.NTMConnect();
+var filpDetected = false;
 setInterval(telescope.getNTMStatus,1000,function(err,result){
 	if (err)
 		console.log("Error getting telescope status");
@@ -103,19 +104,19 @@ setInterval(telescope.getNTMStatus,1000,function(err,result){
 			MountStatus.targetRA =Deg2hms( MountStatus.PointingTargetRA,"h");
 			MountStatus.targetDec =Deg2hms( MountStatus.PointingTargetDec,"d");
 			delta = (MountStatus.transitTime.getTime()-now.getTime())/1000
-			MountStatus.timeRemaining = Math.floor(delta/3600)+"h"+(((delta/3600)-Math.floor(delta/3600))*60).toFixed(2);
+			MountStatus.timeRemaining = delta;
 		}
 		if (isExposing && MountStatus.Track ==0) {
-			if (MountStatus.timeRemaining < 5) {
-				console.log('telescope stop during exposue : Mediran flip detected');
-				setTimeout(telescope.startTrack,300000);
-			}
-			else {
 			console.log('telescope stop tracking during Exposure');
-			//telescope.startTrack();
+			if (delta < 200) {
+				console.log('telescope stop during exposue : Mediran flip detected');
+				if (!filpDetected){
+				   setTimeout(telescope.startTrack,300000);
+				   filpDetected = true;
+				}
+			}
 		}
-
-		}
+		else filpDetected = false;
 	}
 	});
 
@@ -329,7 +330,6 @@ exports.actionMeteo = function(req, res){
 	MeteoSeuil.Rain = req.body.Rain;
 	MeteoSeuil.RainCheck=req.body.RainChek;
 
-	console.log(MeteoSeuil);
 	req.session = null; 
     res.redirect('/meteo');
 
@@ -450,6 +450,7 @@ exports.actionStartSequence = function(req, res) {
 	res.end();
 	task.getTaskList(req.body.id, function(err, list) {
 		if (!err) {
+			stopSerie = false;
 			seqIndex = 0;
 			seqText = new Array();
 			seqProgress = new Array();
@@ -471,6 +472,7 @@ exports.actionStartSequence = function(req, res) {
 						seqProgress[seqProgressIndex++] = item._id;
 					}, function(err) {
 						ccd.Dettach();
+						socket.emit('SequenceEnd', {});
 						if (err) {
 							CriticalError(err);
 							socket.emit('SequenceError', {
@@ -545,6 +547,14 @@ function ProcessTask(item,callback){
 	}
 }
 
+exports.actionStopSequence = function(req, res) {
+	res.redirect('/');
+	req.session = null;
+	res.end();
+	stopSerie = true;
+	ccd.AbortExposure();
+
+}
 function decodeFilter(filterName){
 	switch (filterName){
 		case 'Luminance': return 3;

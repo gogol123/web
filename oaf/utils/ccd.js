@@ -24,6 +24,10 @@ exports.Dettach = function (){
 	maximCCD.Dettach();
 }
 
+exports.AbortExposure= function () {
+	maximCCD.AbortExposure();
+}
+
 
 exports.Expose = function (options,callback,socket){
 	if (!options.ImagePath) {

@@ -52,8 +52,8 @@ var statusTable = [
 		if (i < 7) {
 			getUrlInternal(function(err, result) {
 				if (err) {
-				console.log('error geting roof status : '+i);
-				 util.wait(1000,function(){repeater(i + 1, callback)});
+					console.trace('error geting roof status : '+i);
+				 repeater(i + 1, callback);
 				 }
 			     else callback(null, result)
 			});

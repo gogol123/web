@@ -89,6 +89,7 @@ app.post('/action/addSeq',ensureAuthenticated,routes.actionAddSeq)
 app.post('/action/reorder',ensureAuthenticated,routes.actionReorder)
 
 app.post('/action/startSequence',ensureAuthenticated,routes.actionStartSequence)
+app.post('/action/stopSequence',ensureAuthenticated,routes.actionStopSequence)
 
 server =https.createServer(options,app).listen(app.get('port'), function(){
   console.log("Express server listening on port " + app.get('port'));

@@ -128,63 +128,8 @@ function(err, results) {
 }
 
 
-exports.closaAll = function (common) {
-	console.log("CLOSE ALL");
-	clearInterval(MeteoTaskId);
-	close = true;
-	async.series([ 
-		// park telescope
-		function(callback) {telescope.park(callback);},
-		// close roof
-		function(callback) {roof.Close(callback);},
-		//Stop all the watcher (meteo and NTM)
-		function(callback) { clearInterval(TelescopeTaskId);telescope.NTMDisconnect();callback(null);}
-		],
-		function(err,result){
-		if (err)
-			Error(err);
-		else
-			console.log("CLOSE ALL DONE !"+result);
-			//process.exit();
-	});
-}	
 
 
 
-	//check meteo every 30s 
-
-exports.WatchMeteo = function (timer) {
-	var CounterMeteo=0;
-	function checkMeteo(err,result){
-		if (err)
-			console.log("Error occur");
-		else
-			if ( (result.SkyTemp > 1.0) || (result.Rain > 2100)){
-				console.log ("condition pour femeture meteo:"+CounterMeteo);
-				CounterMeteo++;
-			//	if (CounterMeteo > 10)
-			//		exports.closaAll();
-			}
-			else
-				CounterMeteo=0;
-		};
-	var MeteoTaskId = setInterval(roof.getMeteo,timer,checkMeteo);
-}
 
 
-//check telescope status every 10s
-exports.WatchTelescope= function (timer,Common) {
-	Common._telescope.NTMConnect();
-	function checkTelescope(err,result){
-	if (err)
-		console.log("Error occur in WatchTelescope ");
-	else{
-		//console.log("Telescope :");
-		//console.log(result);
-		if (result.Globalstatus != 0) 
-			console.log("NTM ERROR");
-		;
-		}
-	};	
-	var TelescopeTaskId = setInterval(Common._telescope.getNTMStatus,timer,checkTelescope);
-}

@@ -10,24 +10,29 @@ block script
 
     var SequenceInProgress = false;
     var socket = io.connect('https://oaf.no-ip.info');
-      socket.on('UpdateSequence', function (data) {
-        if (data.all) {
-          for (i = 0; i < data.all.length; i++)
-             $('<p>').append( $('<small>').html(data.all[i])).appendTo('#log');
-        }
-        if (data.progressAll) {
-          for (i = 0; i < data.progressAll.length; i++)
-              $('#'+data.progressAll[i]).addClass('success')
-        }
-           $('<p>').append( $('<small>').html(data.msg)).appendTo('#log');
-       });
-        socket.on('ProgressSequence', function (data) {
-         $('#'+data.id).addClass('success')
-       });
-        socket.on('SequenceError', function (data) {
-          $('#ErrorText').text(data.msg)
-          $('#ErrorMessage').show(data.msg)
-       });
+    socket.on('UpdateSequence', function(data) {
+      if (data.all) {
+        for (i = 0; i < data.all.length; i++)
+        $('<p>').append($('<small>').html(data.all[i])).appendTo('#log');
+      }
+      if (data.progressAll) {
+        for (i = 0; i < data.progressAll.length; i++)
+        $('#' + data.progressAll[i]).addClass('success')
+      }
+      $('<p>').append($('<small>').html(data.msg)).appendTo('#log');
+    });
+    socket.on('ProgressSequence', function(data) {
+      $('#' + data.id).addClass('success')
+    });
+    socket.on('SequenceError', function(data) {
+      $('#ErrorText').text(data.msg)
+      $('#ErrorMessage').show(data.msg)
+      });
+      socket.on('SequenceEnd', function() {
+        $('#Start').text('Start');
+        $('#Start').removeClass('btn-danger');
+        $('#Start').addClass('btn-warning');
+      });
 
     $(document).ready(function() {
 
